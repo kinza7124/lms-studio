@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Environment variables
+.env
+.env.local
+.env*.local
+backend/.env
+frontend/.env.local
+
+# Build outputs
+/frontend/.next/
+/frontend/out/
+/frontend/build/
+/backend/dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Uploads (should be stored in cloud storage in production)
+backend/src/uploads/*
+!backend/src/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Testing
+coverage/
+
+# Misc
+*.pem
+.pnpm-debug.log*
