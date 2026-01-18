@@ -273,5 +273,6 @@ const sendPasswordResetOTP = async (email, otp, fullName) => {
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetOTP,
+  getTransporter,
 };
 
