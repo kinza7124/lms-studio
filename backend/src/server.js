@@ -8,6 +8,7 @@ const pool = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const lectureRoutes = require('./routes/lectureRoutes');
+const { getTransporter } = require('./services/emailService');
 
 const app = express();
 
@@ -52,6 +53,34 @@ app.get('/health/db', async (_req, res) => {
   } catch (error) {
     console.error('DB health check failed', error);
     res.status(500).json({ status: 'error', message: 'Database unreachable' });
+  }
+});
+
+// Email service health check: verifies SMTP transporter configuration
+app.get('/health/email', async (_req, res) => {
+  try {
+    const transporter = getTransporter();
+    if (!transporter) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Email transporter not initialized. Check SMTP_USER/SMTP_PASS.',
+      });
+    }
+    transporter.verify((error, success) => {
+      if (error) {
+        return res.status(500).json({
+          status: 'error',
+          message: error.message,
+          code: error.code,
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          user: process.env.SMTP_USER,
+        });
+      }
+      res.json({ status: 'ok', success });
+    });
+  } catch (e) {
+    res.status(500).json({ status: 'error', message: e.message });
   }
 });
 
