@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { sendEmailViaApi } = require('./brevoApiService');
 require('dotenv').config();
 
 // Create reusable transporter with error handling
@@ -160,6 +161,13 @@ const sendVerificationEmail = async (email, token, fullName) => {
     return true;
   } catch (error) {
     console.error('❌ Error sending verification email:', error.message);
+    
+    // Fallback to Brevo API if SMTP fails
+    if (process.env.BREVO_API_KEY) {
+      console.log('🔄 Attempting to send via Brevo API as fallback...');
+      return await sendEmailViaApi(email, 'Verify Your Email Address', mailOptions.html, 'LMS Studio');
+    }
+    
     console.error('   Error code:', error.code);
     if (error.code === 'EAUTH') {
       console.error('   Authentication failed. Check SMTP_USER and SMTP_PASS in .env');
@@ -246,6 +254,13 @@ const sendPasswordResetOTP = async (email, otp, fullName) => {
     return true;
   } catch (error) {
     console.error('❌ Error sending password reset OTP:', error.message);
+    
+    // Fallback to Brevo API if SMTP fails
+    if (process.env.BREVO_API_KEY) {
+      console.log('🔄 Attempting to send via Brevo API as fallback...');
+      return await sendEmailViaApi(email, 'Password Reset OTP', mailOptions.html, 'LMS Studio');
+    }
+    
     console.error('   Error code:', error.code);
     if (error.code === 'EAUTH') {
       console.error('   Authentication failed. Check SMTP_USER and SMTP_PASS in .env');
