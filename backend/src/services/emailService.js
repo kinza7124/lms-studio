@@ -23,13 +23,26 @@ const createTransporter = () => {
 
   console.log(`📧 Creating email transporter for: ${cleanUser.substring(0, 5)}...@${cleanUser.split('@')[1] || 'unknown'}`);
 
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const envSecure = (process.env.SMTP_SECURE || '').toLowerCase() === 'true';
+  const secure = envSecure || port === 465; // 465 requires secure true; 587 uses STARTTLS (secure false)
+
   const transportConfig = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true for 465, false for other ports
+    port,
+    secure,
     auth: {
       user: cleanUser,
       pass: cleanPassword,
+    },
+    // Improve connection stability in hosted environments
+    connectionTimeout: parseInt(process.env.SMTP_TIMEOUT || '15000', 10),
+    // For some providers behind proxies, STARTTLS may need requireTLS
+    requireTLS: !secure,
+    tls: {
+      // Keep defaults; optionally relax cert checks if provider uses custom certs
+      rejectUnauthorized: false,
+      minVersion: 'TLSv1.2',
     },
   };
 
