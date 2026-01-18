@@ -8,8 +8,8 @@ const sendEmailViaApi = async (to, subject, htmlContent, fromName = 'LMS Studio'
 
   const payload = {
     sender: {
-      name: fromName,
-      email: process.env.SMTP_USER || 'noreply@lmsstudio.com',
+      name: process.env.BREVO_SENDER_NAME || fromName,
+      email: process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'noreply@lmsstudio.com',
     },
     to: [{ email: to }],
     subject: subject,
