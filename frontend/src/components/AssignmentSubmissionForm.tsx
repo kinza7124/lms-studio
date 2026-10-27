@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Field } from '@/components/ui/page';
 
 interface AssignmentSubmissionFormProps {
   assignmentId: number;
@@ -51,37 +51,33 @@ export function AssignmentSubmissionForm({ assignmentId, onSuccess }: Assignment
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3">
-      <div>
-        <Label htmlFor="submissionText">Text Submission (Optional)</Label>
+    <form onSubmit={handleSubmit} className="mt-3 space-y-5">
+      <Field label="Text submission (optional)" htmlFor="submissionText">
         <Textarea
           id="submissionText"
           value={submissionText}
           onChange={(e) => setSubmissionText(e.target.value)}
-          placeholder="Enter your submission text here..."
+          placeholder="Enter your submission text here…"
           rows={4}
-          className="bg-background text-white mt-1"
         />
-      </div>
-      <div>
-        <Label htmlFor="files">File Uploads (Optional)</Label>
+      </Field>
+      <Field
+        label="File uploads (optional)"
+        htmlFor="files"
+        hint={files.length > 0 ? `${files.length} file(s) selected` : undefined}
+      >
         <Input
           id="files"
           type="file"
           multiple
           onChange={(e) => setFiles(Array.from(e.target.files || []))}
-          className="text-white mt-1"
         />
-        {files.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {files.length} file(s) selected
-          </p>
-        )}
+      </Field>
+      <div className="flex justify-end">
+        <Button type="submit" size="sm" disabled={loading || (files.length === 0 && !submissionText.trim())}>
+          {loading ? 'Submitting…' : 'Submit'}
+        </Button>
       </div>
-      <Button type="submit" size="sm" disabled={loading || (files.length === 0 && !submissionText.trim())}>
-        {loading ? 'Submitting...' : 'Submit'}
-      </Button>
     </form>
   );
 }
-

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import type { Suggestion, Course } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Lightbulb, Plus } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Badge, EmptyState, Field, List, LoadingState, PageHeader, Section, Select, statusTone } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function TeacherSuggestionsPage() {
@@ -50,30 +51,33 @@ export default function TeacherSuggestionsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Suggestions</h1>
-        <Button onClick={() => setShowForm(!showForm)}>Submit Suggestion</Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Teaching"
+        title="Suggestions"
+        description="Propose improvements to courses and track the admin response."
+        actions={
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4" />
+            Submit suggestion
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Submit Suggestion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="courseId">Course</Label>
-                <select
+        <Card className="max-w-2xl">
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-5 p-6">
+              <h2 className="text-[17px] font-semibold text-foreground">New suggestion</h2>
+              <Field label="Course" htmlFor="courseId">
+                <Select
                   id="courseId"
                   value={form.courseId}
                   onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                  className="w-full rounded border border-white/20 bg-white/5 px-3 py-2 text-white"
                   required
                 >
                   <option value="">Select a course</option>
@@ -82,59 +86,60 @@ export default function TeacherSuggestionsPage() {
                       {course.code} - {course.title}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="suggestionText">Suggestion</Label>
+                </Select>
+              </Field>
+              <Field label="Suggestion" htmlFor="suggestionText">
                 <Textarea
                   id="suggestionText"
                   value={form.suggestionText}
                   onChange={(e) => setForm({ ...form, suggestionText: e.target.value })}
                   placeholder="Enter your suggestion or proposal..."
+                  rows={5}
                   required
                 />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">Submit</Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              </Field>
+              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
                   Cancel
                 </Button>
+                <Button type="submit">Submit</Button>
               </div>
-            </form>
-          </CardContent>
+            </CardContent>
+          </form>
         </Card>
       )}
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">My Suggestions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+      <Section title="My suggestions">
+        {suggestions.length === 0 ? (
+          <EmptyState
+            icon={Lightbulb}
+            title="No suggestions yet"
+            description="Suggestions you submit will appear here."
+          />
+        ) : (
+          <List>
             {suggestions.map((suggestion) => (
-              <div
-                key={suggestion.suggestion_id}
-                className="rounded-lg border border-white/10 p-4"
-              >
-                <p className="font-medium text-white">
-                  {suggestion.code} - {suggestion.title}
-                </p>
-                <p className="mt-2 text-white">{suggestion.suggestion_text}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Status: <span className="capitalize">{suggestion.status}</span>
-                </p>
+              <div key={suggestion.suggestion_id} className="space-y-3 px-4 py-4 md:px-5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 text-[15px] font-medium text-foreground">
+                    {suggestion.code} - {suggestion.title}
+                  </p>
+                  <Badge tone={statusTone(suggestion.status)} className="capitalize">
+                    {suggestion.status}
+                  </Badge>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-foreground">{suggestion.suggestion_text}</p>
                 {suggestion.admin_response && (
-                  <div className="mt-2 rounded bg-white/5 p-2">
-                    <p className="text-sm font-medium text-muted-foreground">Admin Response:</p>
-                    <p className="text-white">{suggestion.admin_response}</p>
+                  <div className="rounded-xl bg-secondary/60 p-4">
+                    <p className="text-xs text-muted-foreground">Admin response</p>
+                    <p className="mt-1 text-sm text-foreground">{suggestion.admin_response}</p>
                   </div>
                 )}
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </List>
+        )}
+      </Section>
     </div>
   );
 }
-

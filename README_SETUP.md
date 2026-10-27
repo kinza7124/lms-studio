@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.svg">
+    <img src="docs/brand/logo-light.svg" alt="LMS Studio" width="248">
+  </picture>
+</p>
+
 # 🚀 Complete Setup Guide
 
 ## ✅ Everything is Already Configured!

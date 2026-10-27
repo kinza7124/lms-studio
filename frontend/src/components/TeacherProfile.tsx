@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Field, LoadingState } from '@/components/ui/page';
 
 export function TeacherProfile() {
     const [profile, setProfile] = useState({ resume: '', department: '' });
@@ -44,38 +44,34 @@ export function TeacherProfile() {
         }
     };
 
-    if (loading) return <div>Loading profile...</div>;
+    if (loading) return <LoadingState label="Loading profile…" className="py-10" />;
 
     return (
-        <Card className="border-white/10 bg-white/5 text-white">
-            <CardHeader>
-                <CardTitle>Teacher Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="department">Department</Label>
+        <Card>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-5 p-6">
+                    <Field label="Department" htmlFor="department">
                         <Input
                             id="department"
                             value={profile.department}
                             onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white"
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="resume">Resume / Bio</Label>
+                    </Field>
+                    <Field label="Resume / bio" htmlFor="resume">
                         <Textarea
                             id="resume"
                             value={profile.resume}
                             onChange={(e) => setProfile({ ...profile, resume: e.target.value })}
-                            className="bg-white/10 border-white/20 text-white min-h-[100px]"
+                            className="min-h-[120px]"
                         />
+                    </Field>
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={saving}>
+                            {saving ? 'Saving…' : 'Save profile'}
+                        </Button>
                     </div>
-                    <Button type="submit" disabled={saving} className="w-full bg-purple-600 hover:bg-purple-700">
-                        {saving ? 'Saving...' : 'Save Profile'}
-                    </Button>
-                </form>
-            </CardContent>
+                </CardContent>
+            </form>
         </Card>
     );
 }

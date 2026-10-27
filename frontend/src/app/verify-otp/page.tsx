@@ -3,8 +3,9 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, LoadingState } from '@/components/ui/page';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -36,18 +37,10 @@ function VerifyOTPContent() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Verify OTP</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Enter the 6-digit OTP sent to {email}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <AuthShell title="Enter code" description={<>Enter the 6-digit code sent to {email}</>}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="otp">OTP Code</Label>
+              <Label htmlFor="otp">Verification code</Label>
               <Input
                 id="otp"
                 type="text"
@@ -56,16 +49,16 @@ function VerifyOTPContent() {
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
                 required
-                className="text-center text-base sm:text-lg md:text-xl lg:text-2xl tracking-widest"
+                className="h-14 text-center text-2xl font-medium tracking-[0.5em] tabular-nums"
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <Alert tone="error">{error}</Alert>}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500"
+              className="w-full"
               disabled={loading || otp.length !== 6}
             >
-              {loading ? 'Verifying...' : 'Verify OTP'}
+              {loading ? 'Verifying...' : 'Verify code'}
             </Button>
             <Button
               type="button"
@@ -76,15 +69,13 @@ function VerifyOTPContent() {
               Back
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 
 export default function VerifyOTPPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-[60vh] text-white">Loading...</div>}>
+    <Suspense fallback={<LoadingState />}>
       <VerifyOTPContent />
     </Suspense>
   );

@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Plus, Tags } from 'lucide-react';
 import api from '@/lib/api';
 import type { Specialty } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { EmptyState, Field, List, ListItem, LoadingState, PageHeader, Section } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AdminSpecialtiesPage() {
@@ -57,87 +58,84 @@ export default function AdminSpecialtiesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Skill Management (Specialties)</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage teaching skills/specialties. Link skills to courses as requirements, and teachers can add skills to their profile.
-          </p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>Add Skill</Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Skills"
+        description="Teaching skills that can be linked to courses as requirements. Teachers add skills to their profile to become eligible."
+        actions={
+          <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4" />
+            Add skill
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle className="text-white">Create New Skill/Specialty</CardTitle>
+            <CardTitle className="text-[17px]">New skill</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="specialtyName">Skill Name (e.g., Mathematics, Accounting, Business)</Label>
+          <CardContent className="pt-0">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Field label="Name" htmlFor="specialtyName" hint="For example Mathematics, Accounting or Business management.">
                 <Input
                   id="specialtyName"
                   value={form.specialtyName}
                   onChange={(e) => setForm({ ...form, specialtyName: e.target.value })}
-                  placeholder="e.g., Mathematics, Accounting, Business Management"
+                  placeholder="Skill name"
                   required
                 />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
+              </Field>
+              <Field label="Description" htmlFor="description">
                 <Textarea
                   id="description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Describe this skill and its relevance to teaching"
                 />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">Create</Button>
+              </Field>
+              <div className="flex justify-end gap-2 pt-1">
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel
                 </Button>
+                <Button type="submit">Create skill</Button>
               </div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">All Skills/Specialties ({specialties.length})</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            These skills can be linked to courses as requirements. Teachers with matching skills become eligible to teach those courses.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
+      <Section title="All skills" description={`${specialties.length} skills`}>
+        {specialties.length === 0 ? (
+          <EmptyState icon={Tags} title="No skills yet" description="Add a skill to start linking it to courses." />
+        ) : (
+          <List>
             {specialties.map((specialty) => (
-              <div
-                key={specialty.specialty_id}
-                className="flex items-center justify-between rounded-lg border border-white/10 p-4"
-              >
-                <div>
-                  <p className="font-medium text-white">{specialty.specialty_name}</p>
+              <ListItem key={specialty.specialty_id}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">{specialty.specialty_name}</p>
                   {specialty.description && (
-                    <p className="text-sm text-muted-foreground">{specialty.description}</p>
+                    <p className="truncate text-xs text-muted-foreground">{specialty.description}</p>
                   )}
                 </div>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(specialty.specialty_id)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-red-50"
+                  onClick={() => handleDelete(specialty.specialty_id)}
+                >
                   Delete
                 </Button>
-              </div>
+              </ListItem>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </List>
+        )}
+      </Section>
     </div>
   );
 }
-

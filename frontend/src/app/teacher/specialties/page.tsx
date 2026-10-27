@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import type { Specialty } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Award, Plus } from 'lucide-react';
+import { EmptyState, List, ListItem, LoadingState, PageHeader, Section } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function TeacherSpecialtiesPage() {
@@ -54,7 +55,7 @@ export default function TeacherSpecialtiesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   const availableSpecialties = allSpecialties.filter(
@@ -62,85 +63,72 @@ export default function TeacherSpecialtiesPage() {
   );
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">My Skills (Specialties)</h1>
-        <p className="mt-2 text-muted-foreground">
-          Add your teaching skills/specialties to your profile. Courses require specific skills,
-          and you'll be eligible to teach courses that match your skills.
-        </p>
-      </div>
+    <div className="space-y-10">
+      <PageHeader
+        eyebrow="Profile"
+        title="My skills"
+        description="Add your teaching specialties. You'll be eligible to teach courses that require skills you have."
+      />
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">My Skills ({mySpecialties.length})</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            These are the skills you've added to your profile. Courses requiring these skills will appear in your eligible courses list.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {mySpecialties.length === 0 ? (
-            <p className="text-muted-foreground">You don't have any specialties assigned yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {mySpecialties.map((specialty) => (
-                <div
-                  key={specialty.specialty_id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 p-4"
-                >
-                  <div>
-                    <p className="font-medium text-white">{specialty.specialty_name}</p>
-                    {specialty.description && (
-                      <p className="text-sm text-muted-foreground">{specialty.description}</p>
-                    )}
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleRemoveSpecialty(specialty.specialty_id)}
-                  >
-                    Remove
-                  </Button>
+      <Section
+        title={`My skills (${mySpecialties.length})`}
+        description="Courses requiring these skills will appear in your eligible courses list."
+      >
+        {mySpecialties.length === 0 ? (
+          <EmptyState
+            icon={Award}
+            title="No skills added yet"
+            description="Add skills from the list below to become eligible for courses."
+          />
+        ) : (
+          <List>
+            {mySpecialties.map((specialty) => (
+              <ListItem key={specialty.specialty_id}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">{specialty.specialty_name}</p>
+                  {specialty.description && (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{specialty.description}</p>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-red-50"
+                  onClick={() => handleRemoveSpecialty(specialty.specialty_id)}
+                >
+                  Remove
+                </Button>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Section>
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Available Skills to Add</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Add these skills to your profile to become eligible for courses that require them.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {availableSpecialties.length === 0 ? (
-            <p className="text-muted-foreground">No additional specialties available.</p>
-          ) : (
-            <div className="space-y-2">
-              {availableSpecialties.map((specialty) => (
-                <div
-                  key={specialty.specialty_id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 p-4"
-                >
-                  <div>
-                    <p className="font-medium text-white">{specialty.specialty_name}</p>
-                    {specialty.description && (
-                      <p className="text-sm text-muted-foreground">{specialty.description}</p>
-                    )}
-                  </div>
-                  <Button size="sm" onClick={() => handleAddSpecialty(specialty.specialty_id)}>
-                    Add
-                  </Button>
+      <Section
+        title="Available skills"
+        description="Add these skills to your profile to become eligible for courses that require them."
+      >
+        {availableSpecialties.length === 0 ? (
+          <EmptyState icon={Award} title="No additional specialties available" />
+        ) : (
+          <List>
+            {availableSpecialties.map((specialty) => (
+              <ListItem key={specialty.specialty_id}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">{specialty.specialty_name}</p>
+                  {specialty.description && (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{specialty.description}</p>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Button size="sm" variant="outline" onClick={() => handleAddSpecialty(specialty.specialty_id)}>
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Section>
     </div>
   );
 }
-

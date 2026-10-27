@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Users } from 'lucide-react';
 import api from '@/lib/api';
 import type { User } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Avatar, Badge, EmptyState, LoadingState, PageHeader, Select, Tabs, statusTone } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AdminUsersPage() {
@@ -53,79 +54,92 @@ export default function AdminUsersPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">User Management</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage all users: create, update, delete, and assign roles. View student and teacher profiles.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(['all', 'student', 'teacher', 'admin'] as const).map((role) => (
-            <Button
-              key={role}
-              variant={filter === role ? 'default' : 'outline'}
-              onClick={() => setFilter(role)}
-              className="text-xs sm:text-sm"
-            >
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Button>
-          ))}
-        </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Users"
+        description="Create, update and remove accounts, and assign roles across your institution."
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs
+          items={[
+            { value: 'all', label: 'All' },
+            { value: 'student', label: 'Students' },
+            { value: 'teacher', label: 'Teachers' },
+            { value: 'admin', label: 'Admins' },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
+        <p className="text-sm tabular-nums text-muted-foreground">{users.length} users</p>
       </div>
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Users ({users.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {users.length === 0 ? (
-            <p className="text-muted-foreground">No users found.</p>
-          ) : (
-            <div className="space-y-3 md:space-y-2">
+      {users.length === 0 ? (
+        <EmptyState icon={Users} title="No users found" description="Try a different role filter." />
+      ) : (
+        <Card className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th className="hidden md:table-cell">Created</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
               {users.map((user) => (
-                <div
-                  key={user.user_id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-lg border border-white/10 p-3 md:p-4"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white text-sm md:text-base truncate">{user.full_name}</p>
-                    <p className="text-xs md:text-sm text-muted-foreground truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Role: {user.role.toUpperCase()} | Created: {new Date(user.created_at || '').toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-2 flex-shrink-0">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.user_id, e.target.value)}
-                      className="rounded border border-white/20 bg-white/5 px-2 sm:px-3 py-1.5 sm:py-1 text-white text-xs sm:text-sm flex-1 sm:flex-none"
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(user.user_id)}
-                      className="text-xs px-3 sm:px-4"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
+                <tr key={user.user_id}>
+                  <td>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar name={user.full_name} />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{user.full_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <Badge tone={user.role === 'admin' ? 'primary' : statusTone(user.role)} className="capitalize">
+                      {user.role}
+                    </Badge>
+                  </td>
+                  <td className="hidden whitespace-nowrap tabular-nums text-muted-foreground md:table-cell">
+                    {new Date(user.created_at || '').toLocaleDateString()}
+                  </td>
+                  <td>
+                    <div className="flex items-center justify-end gap-2">
+                      <Select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user.user_id, e.target.value)}
+                        className="h-9 w-32 text-sm"
+                        aria-label="Change role"
+                      >
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(user.user_id)}
+                        className="text-destructive hover:bg-red-50"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
-

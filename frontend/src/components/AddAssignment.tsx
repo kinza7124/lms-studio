@@ -4,9 +4,9 @@ import { useState } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Field } from '@/components/ui/page';
 
 interface AddAssignmentProps {
     courseId: number;
@@ -43,46 +43,41 @@ export function AddAssignment({ courseId, onSuccess }: AddAssignmentProps) {
     };
 
     return (
-        <Card className="border-white/10 bg-white/5 text-white mt-4">
-            <CardHeader>
-                <CardTitle className="text-lg">Add Assignment</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Title</Label>
+        <Card className="mt-4">
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-5 p-6">
+                    <h3 className="text-[17px] font-semibold text-foreground">Add assignment</h3>
+                    <Field label="Title" htmlFor="title">
                         <Input
                             id="title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             required
-                            className="bg-white/10 border-white/20 text-white"
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                    </Field>
+                    <Field label="Description" htmlFor="description">
                         <Textarea
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="bg-white/10 border-white/20 text-white"
+                            rows={4}
                         />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="dueDate">Due Date</Label>
+                    </Field>
+                    <Field label="Due date" htmlFor="dueDate" hint="Optional.">
                         <Input
                             id="dueDate"
                             type="datetime-local"
                             value={dueDate}
                             onChange={(e) => setDueDate(e.target.value)}
-                            className="bg-white/10 border-white/20 text-white"
                         />
+                    </Field>
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                            {loading ? 'Adding…' : 'Add assignment'}
+                        </Button>
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700">
-                        {loading ? 'Adding...' : 'Add Assignment'}
-                    </Button>
-                </form>
-            </CardContent>
+                </CardContent>
+            </form>
         </Card>
     );
 }

@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Analytics } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
   useAuthGuard();
 
   useEffect(() => {
@@ -30,127 +28,101 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <div className="py-24 text-center text-sm text-muted-foreground">Loading…</div>;
   }
 
   if (!analytics) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Failed to load analytics</div>;
+    return <div className="py-24 text-center text-sm text-muted-foreground">Failed to load analytics</div>;
   }
 
+  const stats = [
+    { label: 'Total users', value: analytics.totals.users },
+    { label: 'Students', value: analytics.totals.students },
+    { label: 'Teachers', value: analytics.totals.teachers },
+    { label: 'Courses', value: analytics.totals.courses },
+    { label: 'Enrollments', value: analytics.totals.enrollments || 0 },
+  ];
+
+  const actions = [
+    { href: '/admin/users', label: 'Manage users' },
+    { href: '/admin/specialties', label: 'Manage specialties' },
+    { href: '/admin/teaching-assignments', label: 'Teaching assignments' },
+    { href: '/admin/suggestions', label: 'Review suggestions' },
+    { href: '/admin/assign-teacher', label: 'Assign teacher to course' },
+    { href: '/admin/enrollments', label: 'Manage enrollments' },
+  ];
+
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl md:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white">Admin Dashboard</h1>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground">Manage users, courses, and system analytics</p>
-        </div>
+    <div className="space-y-8 md:space-y-10">
+      <div>
+        <p className="eyebrow">Admin</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Overview</h1>
+        <p className="mt-2 text-muted-foreground">Users, courses, and activity across your institution.</p>
       </div>
 
-      <div className="grid gap-3 md:gap-4 lg:gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Total Users</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{analytics.totals.users}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Students</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{analytics.totals.students}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Teachers</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{analytics.totals.teachers}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Courses</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{analytics.totals.courses}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Total Enrollments</CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{analytics.totals.enrollments || 0}</CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border/70 bg-border/70 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-card p-5 md:p-6">
+            <p className="text-[13px] text-muted-foreground">{stat.label}</p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-white/10 bg-white/5">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white">Pending Requests</CardTitle>
+            <CardTitle className="text-[17px]">Pending requests</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <span className="text-muted-foreground">Teaching Assignments</span>
-              <span className="text-2xl font-semibold text-white">
+          <CardContent className="divide-y divide-border/70 py-0">
+            <Link href="/admin/teaching-assignments" className="flex items-center justify-between py-4">
+              <span className="text-sm text-muted-foreground">Teaching assignments</span>
+              <span className="text-2xl font-semibold tracking-tight text-foreground">
                 {analytics.pendingRequests.teachingAssignments}
               </span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <span className="text-muted-foreground">Suggestions</span>
-              <span className="text-2xl font-semibold text-white">
+            </Link>
+            <Link href="/admin/suggestions" className="flex items-center justify-between py-4">
+              <span className="text-sm text-muted-foreground">Suggestions</span>
+              <span className="text-2xl font-semibold tracking-tight text-foreground">
                 {analytics.pendingRequests.suggestions}
               </span>
-            </div>
+            </Link>
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-white/5">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
+            <CardTitle className="text-[17px]">Quick actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Link href="/admin/users">
-              <Button className="w-full" variant="outline">
-                Manage Users
-              </Button>
-            </Link>
-            <Link href="/admin/specialties">
-              <Button className="w-full" variant="outline">
-                Manage Specialties
-              </Button>
-            </Link>
-            <Link href="/admin/teaching-assignments">
-              <Button className="w-full" variant="outline">
-                Teaching Assignments
-              </Button>
-            </Link>
-            <Link href="/admin/suggestions">
-              <Button className="w-full" variant="outline">
-                Review Suggestions
-              </Button>
-            </Link>
-            <Link href="/admin/assign-teacher">
-              <Button className="w-full" variant="outline">
-                Assign Teacher to Course
-              </Button>
-            </Link>
-            <Link href="/admin/enrollments">
-              <Button className="w-full" variant="outline">
-                Manage Enrollments
-              </Button>
-            </Link>
+          <CardContent className="px-3 pb-3">
+            {actions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary"
+              >
+                {action.label}
+                <ChevronRight className="h-4 w-4 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            ))}
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-white/10 bg-white/5">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Top Courses by Enrollment</CardTitle>
+          <CardTitle className="text-[17px]">Top courses by enrollment</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {analytics.enrollmentStats.slice(0, 10).map((stat) => (
-              <div key={stat.course_id} className="flex items-center justify-between rounded-lg border border-white/10 p-3">
-                <div>
-                  <p className="font-medium text-white">{stat.code} - {stat.title}</p>
+        <CardContent className="py-0">
+          <div className="divide-y divide-border/70">
+            {analytics.enrollmentStats.slice(0, 10).map((stat, idx) => (
+              <div key={stat.course_id} className="flex items-center gap-4 py-3.5">
+                <span className="w-5 text-sm tabular-nums text-muted-foreground">{idx + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{stat.title}</p>
+                  <p className="text-xs text-muted-foreground">{stat.code}</p>
                 </div>
-                <span className="text-lg font-semibold text-white">{stat.enrollment_count}</span>
+                <span className="text-sm font-semibold tabular-nums text-foreground">{stat.enrollment_count}</span>
               </div>
             ))}
           </div>
@@ -159,4 +131,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-

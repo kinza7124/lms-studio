@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Quiz, QuizQuestion, QuizSubmission } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge, EmptyState, Field, LoadingState, PageHeader } from '@/components/ui/page';
+import { CheckCircle, FileQuestion } from 'lucide-react';
 import { PlagiarismReportDisplay } from '@/components/PlagiarismReport';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
@@ -95,74 +96,87 @@ export default function QuizSubmissionPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   if (!quiz) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Quiz not found</div>;
+    return (
+      <div className="mx-auto max-w-3xl">
+        <EmptyState icon={FileQuestion} title="Quiz not found" />
+      </div>
+    );
   }
 
   const isSubmitted = submission !== null;
   const isPastDue = quiz.due_date ? new Date(quiz.due_date) < new Date() : false;
 
-  return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">{quiz.title}</h1>
-          <p className="mt-2 text-muted-foreground">{quiz.description}</p>
-        </div>
-        <Button variant="outline" onClick={() => router.back()}>
-          Back
-        </Button>
-      </div>
+  const radioClass = 'h-4 w-4 accent-primary';
+  const optionClass =
+    'flex cursor-pointer items-center gap-3 rounded-xl border border-border/70 px-4 py-3 text-[15px] text-foreground transition-colors hover:bg-secondary/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/[0.04]';
 
-      <Card className="border-white/10 bg-white/5">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-3 gap-2 md:gap-3 lg:gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Total Marks:</span>
-              <span className="ml-2 text-white font-semibold">{quiz.total_marks}</span>
-            </div>
-            {quiz.time_limit && (
-              <div>
-                <span className="text-muted-foreground">Time Limit:</span>
-                <span className="ml-2 text-white font-semibold">{quiz.time_limit} minutes</span>
-              </div>
-            )}
-            {quiz.due_date && (
-              <div>
-                <span className="text-muted-foreground">Due Date:</span>
-                <span className={`ml-2 font-semibold ${isPastDue ? 'text-red-400' : 'text-white'}`}>
-                  {new Date(quiz.due_date).toLocaleString()}
-                </span>
-              </div>
-            )}
+  return (
+    <div className="mx-auto max-w-3xl space-y-8">
+      <PageHeader
+        back
+        eyebrow="Quiz"
+        title={quiz.title}
+        description={quiz.description}
+        actions={
+          isSubmitted ? (
+            <Badge tone="success">Submitted</Badge>
+          ) : isPastDue ? (
+            <Badge tone="danger">Past due</Badge>
+          ) : undefined
+        }
+        className="mb-0 md:mb-0"
+      />
+
+      <dl className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl bg-secondary/60 p-4">
+          <dt className="text-xs text-muted-foreground">Total marks</dt>
+          <dd className="mt-1 text-sm font-medium tabular-nums text-foreground">{quiz.total_marks}</dd>
+        </div>
+        {quiz.time_limit && (
+          <div className="rounded-xl bg-secondary/60 p-4">
+            <dt className="text-xs text-muted-foreground">Time limit</dt>
+            <dd className="mt-1 text-sm font-medium tabular-nums text-foreground">{quiz.time_limit} minutes</dd>
           </div>
-        </CardContent>
-      </Card>
+        )}
+        {quiz.due_date && (
+          <div className="rounded-xl bg-secondary/60 p-4">
+            <dt className="text-xs text-muted-foreground">Due date</dt>
+            <dd className={`mt-1 text-sm font-medium tabular-nums ${isPastDue ? 'text-red-600' : 'text-foreground'}`}>
+              {new Date(quiz.due_date).toLocaleString()}
+            </dd>
+          </div>
+        )}
+      </dl>
 
       {isSubmitted && (
-        <Card className="border-green-500/20 bg-green-500/5">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-green-400 font-semibold">✓ Submitted</span>
-              <span className="text-muted-foreground">
+        <Card>
+          <CardContent className="space-y-5 p-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="success">
+                <CheckCircle className="h-3.5 w-3.5" />
+                Submitted
+              </Badge>
+              <span className="text-sm text-muted-foreground">
                 on {new Date(submission.submitted_at).toLocaleString()}
               </span>
             </div>
             {submission.score !== null && submission.score !== undefined && (
-              <div className="mb-4">
-                <span className="text-muted-foreground">Score: </span>
-                <span className="text-white font-semibold text-lg">
-                  {submission.score} / {submission.max_score || quiz.total_marks}
-                </span>
+              <div>
+                <p className="text-xs text-muted-foreground">Score</p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+                  {submission.score}
+                  <span className="text-lg font-normal text-muted-foreground"> / {submission.max_score || quiz.total_marks}</span>
+                </p>
               </div>
             )}
             {submission.feedback && (
-              <div className="mb-4">
-                <span className="text-muted-foreground">Feedback: </span>
-                <p className="text-white mt-1">{submission.feedback}</p>
+              <div className="rounded-xl bg-secondary/60 p-4">
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Feedback</p>
+                <p className="text-sm text-foreground">{submission.feedback}</p>
               </div>
             )}
             {submission.plagiarism_checked && (
@@ -177,60 +191,59 @@ export default function QuizSubmissionPage() {
       )}
 
       {!isSubmitted && (
-        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 lg:space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {quiz.questions && quiz.questions.length > 0 ? (
-            <div className="space-y-3 md:space-y-4 lg:space-y-6">
+            <div className="space-y-4">
               {quiz.questions.map((question, index) => (
-                <Card key={question.question_id} className="border-white/10 bg-white/5">
-                  <CardHeader>
-                    <CardTitle className="text-white text-lg">
-                      Question {index + 1} ({question.marks} marks)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-white">{question.question_text}</p>
+                <Card key={question.question_id}>
+                  <CardContent className="space-y-4 p-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium text-muted-foreground">Question {index + 1}</p>
+                      <Badge className="tabular-nums">{question.marks} marks</Badge>
+                    </div>
+                    <p className="text-[15px] font-medium leading-relaxed text-foreground">{question.question_text}</p>
 
                     {question.question_type === 'multiple_choice' && question.options && (
                       <div className="space-y-2">
                         {Object.entries(question.options).map(([key, value]) => (
-                          <label key={key} className="flex items-center gap-2 cursor-pointer">
+                          <label key={key} className={optionClass}>
                             <input
                               type="radio"
                               name={`question_${question.question_id}`}
                               value={key}
                               checked={answers[question.question_id] === key}
                               onChange={(e) => handleAnswerChange(question.question_id, e.target.value)}
-                              className="w-4 h-4"
+                              className={radioClass}
                             />
-                            <span className="text-white">{key}: {value}</span>
+                            <span>{key}: {value}</span>
                           </label>
                         ))}
                       </div>
                     )}
 
                     {question.question_type === 'true_false' && (
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className={optionClass}>
                           <input
                             type="radio"
                             name={`question_${question.question_id}`}
                             value="true"
                             checked={answers[question.question_id] === 'true'}
                             onChange={(e) => handleAnswerChange(question.question_id, e.target.value)}
-                            className="w-4 h-4"
+                            className={radioClass}
                           />
-                          <span className="text-white">True</span>
+                          <span>True</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className={optionClass}>
                           <input
                             type="radio"
                             name={`question_${question.question_id}`}
                             value="false"
                             checked={answers[question.question_id] === 'false'}
                             onChange={(e) => handleAnswerChange(question.question_id, e.target.value)}
-                            className="w-4 h-4"
+                            className={radioClass}
                           />
-                          <span className="text-white">False</span>
+                          <span>False</span>
                         </label>
                       </div>
                     )}
@@ -239,9 +252,8 @@ export default function QuizSubmissionPage() {
                       <Textarea
                         value={answers[question.question_id] || ''}
                         onChange={(e) => handleAnswerChange(question.question_id, e.target.value)}
-                        placeholder="Enter your answer..."
+                        placeholder="Enter your answer…"
                         rows={question.question_type === 'essay' ? 6 : 3}
-                        className="bg-background text-white"
                       />
                     )}
                   </CardContent>
@@ -249,45 +261,28 @@ export default function QuizSubmissionPage() {
               ))}
             </div>
           ) : (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No questions added to this quiz yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={FileQuestion} title="No questions added to this quiz yet" />
           )}
 
-          <Card className="border-white/10 bg-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">Additional Files (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="text-white"
-              />
-              {files.length > 0 && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  {files.length} file(s) selected
-                </div>
-              )}
+          <Card>
+            <CardContent className="p-6">
+              <Field
+                label="Additional files (optional)"
+                hint={files.length > 0 ? `${files.length} file(s) selected` : undefined}
+              >
+                <Input type="file" multiple onChange={handleFileChange} />
+              </Field>
             </CardContent>
           </Card>
 
-          <div className="flex gap-2 md:gap-3 lg:gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            {isPastDue && <span className="text-sm text-red-600">This quiz is past due date</span>}
             <Button type="submit" disabled={submitting || isPastDue}>
-              {submitting ? 'Submitting...' : 'Submit Quiz'}
+              {submitting ? 'Submitting…' : 'Submit quiz'}
             </Button>
-            {isPastDue && (
-              <span className="text-red-400 text-sm self-center">
-                This quiz is past due date
-              </span>
-            )}
           </div>
         </form>
       )}
     </div>
   );
 }
-

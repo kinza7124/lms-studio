@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import type { Course } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Avatar, EmptyState, List, ListItem, LoadingState, PageHeader, Section, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 type Enrollment = {
@@ -94,22 +94,21 @@ export default function TeacherStudentsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Student Management</h1>
-
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Select Course</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <select
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Teaching"
+        title="Students"
+        description="Review enrolled students and record final grades."
+        actions={
+          <Select
+            aria-label="Select course"
             value={selectedCourse || ''}
             onChange={(e) => setSelectedCourse(Number(e.target.value))}
-            className="w-full rounded border border-white/20 bg-white/5 px-4 py-2 text-white"
+            className="h-10 sm:w-72"
           >
             <option value="">Select a course</option>
             {courses.map((course) => (
@@ -117,33 +116,40 @@ export default function TeacherStudentsPage() {
                 {course.code} - {course.title}
               </option>
             ))}
-          </select>
-        </CardContent>
-      </Card>
+          </Select>
+        }
+      />
 
       {selectedCourse && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Enrolled Students ({enrollments.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+        <Section title={`Enrolled students (${enrollments.length})`}>
+          {enrollments.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No students enrolled"
+              description="Students enrolled in this course will appear here."
+            />
+          ) : (
+            <List>
               {enrollments.map((enrollment) => (
-                <div
+                <ListItem
                   key={enrollment.enrollment_id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 p-4"
+                  className="flex-col items-stretch sm:flex-row sm:items-center"
                 >
-                  <div>
-                    <p className="font-medium text-white">{enrollment.student_name}</p>
-                    <p className="text-sm text-muted-foreground">{enrollment.student_email}</p>
-                    {enrollment.major && (
-                      <p className="text-sm text-muted-foreground">Major: {enrollment.major}</p>
-                    )}
-                    <p className="text-sm text-muted-foreground">Term: {enrollment.term}</p>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar name={enrollment.student_name} />
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-medium text-foreground">{enrollment.student_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {enrollment.student_email}
+                        {enrollment.major && ` · ${enrollment.major}`}
+                        {` · ${enrollment.term}`}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pl-12 sm:pl-0">
                     <Input
                       type="text"
+                      aria-label="Grade"
                       placeholder="Grade"
                       value={gradeForm[enrollment.enrollment_id]?.grade || ''}
                       onChange={(e) =>
@@ -155,23 +161,23 @@ export default function TeacherStudentsPage() {
                           },
                         })
                       }
-                      className="w-20"
+                      className="h-9 w-20 text-center"
                       maxLength={2}
                     />
                     <Button
                       size="sm"
+                      variant="outline"
                       onClick={() => handleGradeUpdate(enrollment.enrollment_id, enrollment.student_id)}
                     >
                       Update
                     </Button>
                   </div>
-                </div>
+                </ListItem>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+            </List>
+          )}
+        </Section>
       )}
     </div>
   );
 }
-

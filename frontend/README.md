@@ -1,3 +1,12 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../docs/brand/logo-dark.svg">
+    <img src="../docs/brand/logo-light.svg" alt="LMS Studio" width="248">
+  </picture>
+</p>
+
+<p align="center">LMS Studio web app — Next.js frontend</p>
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

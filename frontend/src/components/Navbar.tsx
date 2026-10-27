@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
@@ -105,8 +106,7 @@ export function Navbar() {
 
     if (user.role === 'admin') {
       return [
-        { href: '/', label: 'Home' },
-        { href: '/admin', label: 'Admin Panel' },
+        { href: '/admin', label: 'Overview' },
         { href: '/admin/users', label: 'Users' },
         { href: '/admin/courses', label: 'Courses' },
         { href: '/admin/quizzes', label: 'Quizzes' },
@@ -115,45 +115,26 @@ export function Navbar() {
         { href: '/admin/teaching-assignments', label: 'Teaching' },
         { href: '/admin/suggestions', label: 'Suggestions' },
         { href: '/admin/specialties', label: 'Specialties' },
-        { href: '/profile', label: 'Profile' },
       ];
     }
 
     if (user.role === 'teacher') {
       return [
-        { href: '/', label: 'Home' },
         { href: '/dashboard', label: 'Dashboard' },
-        { href: '/teacher/my-courses', label: 'My Courses' },
+        { href: '/teacher/my-courses', label: 'My courses' },
         { href: '/teacher/teaching-requests', label: 'Requests' },
         { href: '/teacher/suggestions', label: 'Suggestions' },
         { href: '/teacher/specialties', label: 'Specialties' },
-        { href: '/profile', label: 'Profile' },
       ];
     }
 
     // Student
     return [
-      { href: '/', label: 'Home' },
       { href: '/dashboard', label: 'Dashboard' },
       { href: '/courses', label: 'Courses' },
-      { href: '/student/my-courses', label: 'My Courses' },
+      { href: '/student/my-courses', label: 'My courses' },
       { href: '/grades', label: 'Grades' },
-      { href: '/profile', label: 'Profile' },
     ];
-  };
-
-  const getRoleBadgeColor = () => {
-    if (!user) return '';
-    switch (user.role) {
-      case 'admin':
-        return 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-400/30 text-red-200';
-      case 'teacher':
-        return 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-400/30 text-blue-200';
-      case 'student':
-        return 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-400/30 text-green-200';
-      default:
-        return 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-purple-400/30 text-purple-200';
-    }
   };
 
   const getRoleLabel = () => {
@@ -170,187 +151,134 @@ export function Navbar() {
     }
   };
 
-  const getNavbarGradient = () => {
-    if (!user) return 'from-black/80 via-purple-900/20 to-black/80';
-    switch (user.role) {
-      case 'admin':
-        return 'from-black/80 via-red-900/20 to-black/80';
-      case 'teacher':
-        return 'from-black/80 via-blue-900/20 to-black/80';
-      case 'student':
-        return 'from-black/80 via-green-900/20 to-black/80';
-      default:
-        return 'from-black/80 via-purple-900/20 to-black/80';
-    }
-  };
+  const links = getLinks();
+  // The most specific link matching the current path is the active one
+  const activeHref = links
+    .map((link) => link.href)
+    .filter((href) => (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`)))
+    .sort((a, b) => b.length - a.length)[0];
+  const isActive = (href: string) => href === activeHref;
+  const initials = (user?.full_name || user?.email || 'U')
+    .split(' ')
+    .map((part: string) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <header className={cn(
-      "sticky top-0 z-30 w-full border-b backdrop-blur-xl shadow-lg transition-all duration-300",
-      user?.role === 'admin' ? "border-red-500/20 shadow-red-500/10 bg-gradient-to-r from-black/80 via-red-900/20 to-black/80" :
-      user?.role === 'teacher' ? "border-blue-500/20 shadow-blue-500/10 bg-gradient-to-r from-black/80 via-blue-900/20 to-black/80" :
-      user?.role === 'student' ? "border-green-500/20 shadow-green-500/10 bg-gradient-to-r from-black/80 via-green-900/20 to-black/80" :
-      "border-white/10 shadow-purple-500/10 bg-gradient-to-r from-black/80 via-purple-900/20 to-black/80"
-    )}>
-      <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-8 max-w-7xl">
-        <div className="flex h-16 md:h-20 items-center justify-between gap-2 sm:gap-3 lg:gap-4">
-          {/* Logo Section */}
-          <div className="flex items-center shrink-0 min-w-0 max-w-[40%] sm:max-w-none">
-            <Link 
-              href="/" 
-              className="flex items-center transition-all duration-300 hover:scale-105 hover:brightness-110"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Logo size="sm" className="md:hidden" showSubtitle={false} />
-              <Logo size="md" className="hidden md:block" />
-            </Link>
-          </div>
+    <header className="sticky top-0 z-30 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-xl backdrop-saturate-150">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex h-14 items-center justify-between gap-6">
+          <Link href={user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/'} className="flex shrink-0 items-center" onClick={() => setMobileMenuOpen(false)}>
+            <Logo size="sm" />
+          </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop navigation */}
           {!loading && (
-            <nav className="hidden xl:flex items-center gap-1 2xl:gap-2 rounded-full border border-white/10 bg-gradient-to-r from-white/5 via-purple-500/10 to-white/5 px-3 2xl:px-4 py-1.5 shadow-lg shadow-black/20 backdrop-blur-xl transition-all duration-300 hover:border-purple-400/30 hover:shadow-purple-500/20 flex-shrink">
-              {getLinks().map((link) => (
+            <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex">
+              {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'text-xs 2xl:text-sm font-medium transition-all duration-300 relative px-1.5 2xl:px-2 py-1 whitespace-nowrap',
-                    pathname === link.href 
-                      ? 'text-white' 
-                      : 'text-muted-foreground hover:text-purple-200',
+                    'whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] transition-colors duration-200',
+                    isActive(link.href)
+                      ? 'bg-black/[0.05] font-medium text-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {link.label}
-                  {pathname === link.href && (
-                    <span className="absolute -bottom-1 left-1.5 2xl:left-2 right-1.5 2xl:right-2 h-0.5 bg-gradient-to-r from-purple-400 to-cyan-300 rounded-full" />
-                  )}
                 </Link>
               ))}
             </nav>
           )}
 
-          {/* Right Section - User Info & Mobile Menu Button */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-0">
+          <div className="flex shrink-0 items-center gap-1.5">
             {!loading ? (
-              <>
-                {user && (user.role === 'admin' || user.role === 'teacher' || user.role === 'student') ? (
-                  <>
-                    {/* Notification Bell - Desktop only */}
-                    <div className="hidden lg:block">
-                      <NotificationBell />
+              user && (user.role === 'admin' || user.role === 'teacher' || user.role === 'student') ? (
+                <>
+                  <div className="hidden md:block">
+                    <NotificationBell />
+                  </div>
+                  <Link href="/profile" className="hidden items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-black/[0.04] lg:flex">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-foreground">
+                      {initials}
                     </div>
-                    
-                    {/* Role badge and user name - visible on 2xl screens only */}
-                    <div className="hidden 2xl:flex items-center gap-2">
-                      <span className={cn(
-                        "px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border backdrop-blur-sm whitespace-nowrap",
-                        getRoleBadgeColor()
-                      )}>
-                        {getRoleLabel()}
-                      </span>
-                      <span className="text-xs 2xl:text-sm text-muted-foreground max-w-[100px] 2xl:max-w-[120px] truncate">
+                    <div className="flex flex-col leading-tight">
+                      <span className="max-w-[140px] truncate text-[13px] font-medium text-foreground">
                         {user.full_name || user.email || 'User'}
                       </span>
+                      <span className="text-[11px] text-muted-foreground">{getRoleLabel()}</span>
                     </div>
-                    {/* Role badge only - visible on xl but hidden on 2xl */}
-                    <span className={cn(
-                      "hidden xl:flex 2xl:hidden px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border backdrop-blur-sm",
-                      getRoleBadgeColor()
-                    )}>
-                      {getRoleLabel()}
-                    </span>
-                    {/* Logout button - Show on md and up, hidden on mobile only */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="hidden md:flex border-white/20 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-white backdrop-blur-sm transition-all duration-300 hover:border-purple-400/50 hover:from-purple-500/30 hover:to-indigo-500/30 hover:shadow-lg hover:shadow-purple-500/30 text-xs px-2 sm:px-3 py-1.5 h-auto whitespace-nowrap"
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-white text-xs sm:text-sm px-2 sm:px-3"
-                      onClick={() => router.push('/login')}
-                    >
-                      Sign in
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-white/20 text-white hover:bg-white/10 text-xs sm:text-sm px-2 sm:px-3"
-                      onClick={() => router.push('/signup')}
-                    >
-                      Sign up
-                    </Button>
-                  </>
-                )}
-              </>
+                  </Link>
+                  <Button size="sm" variant="ghost" className="hidden text-muted-foreground md:inline-flex" onClick={handleLogout}>
+                    Sign out
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 xl:hidden"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    aria-label="Toggle menu"
+                  >
+                    {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => router.push('/login')}>
+                    Sign in
+                  </Button>
+                  <Button size="sm" onClick={() => router.push('/signup')}>
+                    Get started
+                  </Button>
+                </>
+              )
             ) : (
-              <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
-            )}
-
-            {/* Mobile Menu Button */}
-            {!loading && user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden text-white p-2"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
-              </Button>
+              <div className="h-8 w-8 animate-pulse rounded-full bg-secondary" />
             )}
           </div>
         </div>
 
-        {/* Mobile Menu - Only show on md and below */}
+        {/* Mobile / tablet menu */}
         {mobileMenuOpen && !loading && user && (
-          <div className="md:hidden border-t border-white/10 mt-2 pt-4 pb-4">
-            <nav className="flex flex-col gap-2 px-4">
-              {getLinks().map((link) => (
+          <div className="border-t border-black/[0.06] py-3 xl:hidden">
+            <nav className="flex flex-col gap-0.5">
+              {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    'text-sm font-medium transition-all duration-300 relative px-4 py-2 rounded-lg',
-                    pathname === link.href 
-                      ? 'text-white bg-white/10' 
-                      : 'text-muted-foreground hover:text-white hover:bg-white/5',
+                    'rounded-lg px-3 py-2.5 text-[15px] transition-colors',
+                    isActive(link.href)
+                      ? 'bg-black/[0.05] font-medium text-foreground'
+                      : 'text-muted-foreground hover:bg-black/[0.03] hover:text-foreground',
                   )}
                 >
                   {link.label}
-                  {pathname === link.href && (
-                    <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-400 to-cyan-300 rounded-r-full" />
-                  )}
                 </Link>
               ))}
-              {/* Mobile Logout Button */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="md:hidden w-full border-white/20 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-white backdrop-blur-sm transition-all duration-300 hover:border-purple-400/50 hover:from-purple-500/30 hover:to-indigo-500/30 hover:shadow-lg hover:shadow-purple-500/30 text-sm px-4 py-2 mt-2"
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  'rounded-lg px-3 py-2.5 text-[15px] transition-colors',
+                  pathname === '/profile' ? 'bg-black/[0.05] font-medium text-foreground' : 'text-muted-foreground hover:bg-black/[0.03] hover:text-foreground',
+                )}
+              >
+                Profile
+              </Link>
+              <button
+                type="button"
+                className="mt-2 border-t border-black/[0.06] px-3 pt-3 text-left text-[15px] text-destructive md:hidden"
                 onClick={() => {
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
               >
-                Logout
-              </Button>
+                Sign out
+              </button>
             </nav>
           </div>
         )}
@@ -358,4 +286,3 @@ export function Navbar() {
     </header>
   );
 }
-

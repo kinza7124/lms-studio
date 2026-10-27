@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, LoadingState } from '@/components/ui/page';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -40,15 +41,7 @@ function ResendVerificationForm() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Resend Verification Email</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Enter your email address to receive a new verification link
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <AuthShell title="Resend verification email" description="Enter your email address to receive a new verification link">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -61,14 +54,14 @@ function ResendVerificationForm() {
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            {message && <p className="text-sm text-green-400">{message}</p>}
+            {error && <Alert tone="error">{error}</Alert>}
+            {message && <Alert tone="success">{message}</Alert>}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500"
+              className="w-full"
               disabled={loading}
             >
-              {loading ? 'Sending...' : 'Resend Verification Email'}
+              {loading ? 'Sending…' : 'Resend verification email'}
             </Button>
             <Button
               type="button"
@@ -76,18 +69,16 @@ function ResendVerificationForm() {
               className="w-full"
               onClick={() => router.push('/login')}
             >
-              Back to Login
+              Back to sign in
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 
 export default function ResendVerificationPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-[60vh] text-white">Loading...</div>}>
+    <Suspense fallback={<LoadingState />}>
       <ResendVerificationForm />
     </Suspense>
   );

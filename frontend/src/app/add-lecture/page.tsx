@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import type { Course } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, Field, PageHeader, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AddLecturePage() {
@@ -96,118 +96,117 @@ export default function AddLecturePage() {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader className="p-4 md:p-6 lg:p-8">
-          <CardTitle className="text-2xl md:text-3xl text-white">Add Lecture</CardTitle>
-          <p className="text-xs md:text-sm text-muted-foreground mt-2">
-            {courses.length === 0
-              ? 'You are not assigned to any courses yet. Contact admin to get assigned to a course.'
-              : 'Select a course you are assigned to teach and add lecture content.'}
-          </p>
-        </CardHeader>
-        <CardContent className="p-4 md:p-6 lg:p-8">
-          <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-            <Label htmlFor="courseId">Course</Label>
-                <select
-                  id="courseId"
-                  name="courseId"
-                  value={form.courseId}
-                  onChange={handleSelectChange}
-                  className="h-10 w-full rounded-md border border-white/20 bg-white/5 px-3 text-sm text-white"
-                  required
-                  disabled={courses.length === 0}
-                >
-              <option value="">
-                {courses.length === 0
-                  ? 'No assigned courses available'
-                  : 'Select a course you are assigned to'}
-              </option>
-              {courses.map((course) => (
-                <option key={course.course_id} value={course.course_id}>
-                  {course.code} - {course.title}
-                </option>
-              ))}
-            </select>
-            {courses.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                You must be assigned to a course by admin before you can add lectures.
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="title">Lecture Title</Label>
-            <Input
-              id="title"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="videoUrl">Video URL</Label>
-            <Input
-              id="videoUrl"
-              name="videoUrl"
-              value={form.videoUrl}
-              onChange={handleChange}
-              placeholder="https://www.youtube.com/embed/..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lectureNumber">Lecture Number</Label>
-            <Input
-              id="lectureNumber"
-              name="lectureNumber"
-              type="number"
-              value={form.lectureNumber}
-              onChange={handleChange}
-              min={1}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="content">Content / Notes</Label>
-            <Textarea
-              id="content"
-              name="content"
-              value={form.content}
-              onChange={handleChange}
-              placeholder="Outline, important formulas, or transcript excerpts."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pdf">Lecture PDF</Label>
-            <Input
-              id="pdf"
-              type="file"
-              accept="application/pdf"
-              onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
-            />
-          </div>
-          {message && (
-            <p
-              className={`text-sm ${
-                message.includes('successfully')
-                  ? 'text-green-400'
-                  : 'text-red-400'
-              }`}
+    <div className="mx-auto max-w-2xl space-y-8">
+      <PageHeader
+        back
+        eyebrow="Teaching"
+        title="Add lecture"
+        description={
+          courses.length === 0
+            ? 'You are not assigned to any courses yet. Contact admin to get assigned to a course.'
+            : 'Select a course you are assigned to teach and add lecture content.'
+        }
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardContent className="space-y-5 p-6">
+            <Field
+              label="Course"
+              htmlFor="courseId"
+              hint={
+                courses.length === 0
+                  ? 'You must be assigned to a course by admin before you can add lectures.'
+                  : undefined
+              }
             >
-              {message}
-            </p>
-          )}
+              <Select
+                id="courseId"
+                name="courseId"
+                value={form.courseId}
+                onChange={handleSelectChange}
+                required
+                disabled={courses.length === 0}
+              >
+                <option value="">
+                  {courses.length === 0
+                    ? 'No assigned courses available'
+                    : 'Select a course you are assigned to'}
+                </option>
+                {courses.map((course) => (
+                  <option key={course.course_id} value={course.course_id}>
+                    {course.code} - {course.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="grid gap-5 sm:grid-cols-4">
+              <Field label="Lecture title" htmlFor="title" className="sm:col-span-3">
+                <Input
+                  id="title"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                />
+              </Field>
+              <Field label="Number" htmlFor="lectureNumber">
+                <Input
+                  id="lectureNumber"
+                  name="lectureNumber"
+                  type="number"
+                  value={form.lectureNumber}
+                  onChange={handleChange}
+                  min={1}
+                  className="tabular-nums"
+                />
+              </Field>
+            </div>
+            <Field label="Video URL" htmlFor="videoUrl" hint="YouTube embed links work best.">
+              <Input
+                id="videoUrl"
+                name="videoUrl"
+                value={form.videoUrl}
+                onChange={handleChange}
+                placeholder="https://www.youtube.com/embed/..."
+              />
+            </Field>
+            <Field label="Content / notes" htmlFor="content">
+              <Textarea
+                id="content"
+                name="content"
+                value={form.content}
+                onChange={handleChange}
+                placeholder="Outline, important formulas, or transcript excerpts."
+                rows={5}
+              />
+            </Field>
+            <Field label="Lecture PDF" htmlFor="pdf" hint="Optional. PDF files only.">
+              <Input
+                id="pdf"
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
+                className="h-auto py-2 file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1 file:text-[13px] file:font-medium file:text-foreground"
+              />
+            </Field>
+          </CardContent>
+        </Card>
+
+        {message && (
+          <Alert tone={message.includes('successfully') ? 'success' : 'error'}>{message}</Alert>
+        )}
+
+        <div className="flex justify-end">
           <Button
             type="submit"
             disabled={loading || courses.length === 0}
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
+            className="w-full sm:w-auto"
           >
-            {loading ? 'Uploading...' : 'Save Lecture'}
+            {loading ? 'Uploading…' : 'Save lecture'}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
-      </div>
+        </div>
+      </form>
+    </div>
   );
 }
-

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Course, Assignment, Submission } from '@/types';
-import { CourseCard } from '@/components/CourseCard';
+import { BookOpen, Calendar, ChevronRight, ClipboardList, FileText, Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState, List, ListItem, LoadingState, PageHeader, Section } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function TeacherMyCoursesPage() {
@@ -72,122 +73,147 @@ export default function TeacherMyCoursesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
-  return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">My Courses</h1>
-          <p className="mt-2 text-muted-foreground">
-            Manage your assigned courses, lectures, and assignments
-          </p>
-        </div>
-        <Button onClick={() => router.push('/add-lecture')}>Add Lecture</Button>
-      </div>
+  const activeCourse = courses.find((c) => c.course_id === selectedCourse);
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <Card className="border-white/10 bg-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">Assigned Courses ({courses.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Teaching"
+        title="My courses"
+        description="Manage your assigned courses, lectures and assignments."
+        actions={
+          <Button onClick={() => router.push('/add-lecture')}>
+            <Plus className="h-4 w-4" />
+            Add lecture
+          </Button>
+        }
+      />
+
+      {courses.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No assigned courses"
+          description="Courses assigned to you will appear here."
+        />
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="min-w-0 space-y-3 lg:col-span-1">
+            <p className="eyebrow">Assigned courses · {courses.length}</p>
+            <List>
               {courses.map((course) => (
-                <button
+                <ListItem
                   key={course.course_id}
                   onClick={() => setSelectedCourse(course.course_id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                    selectedCourse === course.course_id
-                      ? 'border-purple-500 bg-purple-500/10 text-white'
-                      : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'
-                  }`}
+                  active={selectedCourse === course.course_id}
                 >
-                  <p className="font-medium">{course.code}</p>
-                  <p className="text-sm">{course.title}</p>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-2 space-y-3 md:space-y-4 lg:space-y-6">
-          {selectedCourse && (
-            <>
-              <Card className="border-white/10 bg-white/5">
-                <CardHeader>
-                  <CardTitle className="text-white">Course Management</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push(`/course/${selectedCourse}`)}
-                    >
-                      View Course Details
-                    </Button>
-                    <Button variant="outline" onClick={() => router.push('/add-lecture')}>
-                      Add Lecture
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push(`/teacher/students?courseId=${selectedCourse}`)}
-                    >
-                      View Students
-                    </Button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-medium text-foreground">{course.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">{course.code}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <ChevronRight
+                    className={`h-4 w-4 shrink-0 ${selectedCourse === course.course_id ? 'text-primary' : 'text-muted-foreground'}`}
+                    strokeWidth={1.75}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </div>
 
-              <Card className="border-white/10 bg-white/5">
-                <CardHeader>
-                  <CardTitle className="text-white">Assignments ({assignments.length})</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {assignments.map((assignment) => (
-                    <div
-                      key={assignment.assignment_id}
-                      className="rounded-lg border border-white/10 p-4"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white">{assignment.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {assignment.description}
-                          </p>
-                          {assignment.due_date && (
-                            <p className="text-xs text-purple-300 mt-2">
-                              Due: {new Date(assignment.due_date).toLocaleString()}
-                            </p>
-                          )}
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Submissions: {submissions[assignment.assignment_id]?.length || 0}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            router.push(
-                              `/teacher/assignments/${assignment.assignment_id}?courseId=${selectedCourse}`,
-                            )
-                          }
-                        >
-                          View Submissions
-                        </Button>
-                      </div>
+          <div className="min-w-0 space-y-6 lg:col-span-2">
+            {selectedCourse && (
+              <>
+                <Card>
+                  <CardContent className="space-y-5 p-6">
+                    <div className="min-w-0">
+                      {activeCourse?.code && <p className="eyebrow mb-1">{activeCourse.code}</p>}
+                      <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                        {activeCourse?.title || 'Course management'}
+                      </h2>
                     </div>
-                  ))}
-                  {assignments.length === 0 && (
-                    <p className="text-muted-foreground">No assignments yet.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/course/${selectedCourse}`)}
+                      >
+                        <BookOpen className="h-4 w-4" strokeWidth={1.75} />
+                        View course details
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => router.push('/add-lecture')}>
+                        <Plus className="h-4 w-4" strokeWidth={1.75} />
+                        Add lecture
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/teacher/students?courseId=${selectedCourse}`)}
+                      >
+                        <Users className="h-4 w-4" strokeWidth={1.75} />
+                        View students
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Section title={`Assignments (${assignments.length})`}>
+                  {assignments.length === 0 ? (
+                    <EmptyState
+                      icon={ClipboardList}
+                      title="No assignments yet"
+                      description="Assignments for this course will appear here."
+                    />
+                  ) : (
+                    <List>
+                      {assignments.map((assignment) => (
+                        <ListItem
+                          key={assignment.assignment_id}
+                          className="flex-col items-stretch sm:flex-row sm:items-center"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[15px] font-medium text-foreground">{assignment.title}</p>
+                            {assignment.description && (
+                              <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+                                {assignment.description}
+                              </p>
+                            )}
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                              {assignment.due_date && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                  Due {new Date(assignment.due_date).toLocaleString()}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center gap-1 tabular-nums">
+                                <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                {submissions[assignment.assignment_id]?.length || 0} submissions
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="self-start sm:self-auto"
+                            onClick={() =>
+                              router.push(
+                                `/teacher/assignments/${assignment.assignment_id}?courseId=${selectedCourse}`,
+                              )
+                            }
+                          >
+                            View submissions
+                          </Button>
+                        </ListItem>
+                      ))}
+                    </List>
                   )}
-                </CardContent>
-              </Card>
-            </>
-          )}
+                </Section>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, Badge, List, type BadgeTone } from '@/components/ui/page';
 import type { PlagiarismReport } from '@/types';
 
 interface PlagiarismReportProps {
@@ -12,17 +12,17 @@ interface PlagiarismReportProps {
 export function PlagiarismReportDisplay({ plagiarismScore, plagiarismReport, plagiarismChecked }: PlagiarismReportProps) {
   if (!plagiarismChecked) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Plagiarism check not performed
-      </div>
+      </p>
     );
   }
 
   if (plagiarismScore === null || plagiarismScore === undefined) {
     return (
-      <div className="text-sm text-yellow-400">
+      <Alert tone="warning">
         Plagiarism check completed, but score unavailable
-      </div>
+      </Alert>
     );
   }
 
@@ -35,77 +35,88 @@ export function PlagiarismReportDisplay({ plagiarismScore, plagiarismReport, pla
     console.error('Failed to parse plagiarism report:', e);
   }
 
-  const getScoreColor = (score: number) => {
-    if (score < 10) return 'text-green-400';
-    if (score < 25) return 'text-yellow-400';
-    if (score < 50) return 'text-orange-400';
-    return 'text-red-400';
+  const getScoreTone = (score: number): BadgeTone => {
+    if (score < 10) return 'success';
+    if (score < 50) return 'warning';
+    return 'danger';
   };
 
-  const getScoreBadgeColor = (score: number) => {
-    if (score < 10) return 'bg-green-500/20 border-green-400/30 text-green-200';
-    if (score < 25) return 'bg-yellow-500/20 border-yellow-400/30 text-yellow-200';
-    if (score < 50) return 'bg-orange-500/20 border-orange-400/30 text-orange-200';
-    return 'bg-red-500/20 border-red-400/30 text-red-200';
+  const getMeterColor = (score: number) => {
+    if (score < 10) return 'bg-green-500';
+    if (score < 50) return 'bg-amber-500';
+    return 'bg-red-500';
   };
+
+  const meterWidth = Math.max(0, Math.min(100, plagiarismScore));
 
   return (
-    <Card className="border-white/10 bg-white/5">
-      <CardHeader>
-        <CardTitle className="text-white text-lg">Plagiarism Check Results</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">Similarity Score:</span>
-          <span className={`text-2xl font-bold ${getScoreColor(plagiarismScore)}`}>
+    <div className="space-y-5 rounded-xl bg-secondary/60 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h4 className="text-[15px] font-semibold tracking-tight text-foreground">Plagiarism check</h4>
+        <Badge tone={getScoreTone(plagiarismScore)}>
+          {plagiarismScore < 10 ? 'Low risk' : plagiarismScore < 25 ? 'Moderate risk' : plagiarismScore < 50 ? 'High risk' : 'Very high risk'}
+        </Badge>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm text-muted-foreground">Similarity score</span>
+          <span className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
             {plagiarismScore.toFixed(1)}%
           </span>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getScoreBadgeColor(plagiarismScore)}`}>
-            {plagiarismScore < 10 ? 'Low Risk' : plagiarismScore < 25 ? 'Moderate Risk' : plagiarismScore < 50 ? 'High Risk' : 'Very High Risk'}
-          </span>
         </div>
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-card"
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={meterWidth}
+          aria-label="Similarity score"
+        >
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${getMeterColor(plagiarismScore)}`}
+            style={{ width: `${meterWidth}%` }}
+          />
+        </div>
+      </div>
 
-        {report && report.sources && report.sources.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm font-semibold text-white mb-2">Matched Sources:</h4>
-            <div className="space-y-2">
-              {report.sources.map((source, index) => (
-                <div key={index} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="flex items-center justify-between mb-1">
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-purple-400 hover:text-purple-300 truncate max-w-[70%]"
-                    >
-                      {source.url}
-                    </a>
-                    <span className="text-xs text-muted-foreground">
-                      {source.similarity.toFixed(1)}% match
-                    </span>
-                  </div>
-                  {source.matchedText && (
-                    <p className="text-xs text-muted-foreground mt-2 italic">
-                      "{source.matchedText}"
-                    </p>
-                  )}
+      {report && report.sources && report.sources.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Matched sources</p>
+          <List>
+            {report.sources.map((source, index) => (
+              <div key={index} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 truncate text-sm text-primary hover:underline underline-offset-4"
+                  >
+                    {source.url}
+                  </a>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {source.similarity.toFixed(1)}% match
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {report && report.error && (
-          <div className="text-sm text-red-400">
-            Error: {report.error}
-          </div>
-        )}
-
-        <div className="text-xs text-muted-foreground mt-4 pt-4 border-t border-white/10">
-          Checked at: {report?.checkedAt ? new Date(report.checkedAt).toLocaleString() : 'Unknown'}
+                {source.matchedText && (
+                  <p className="mt-1.5 text-xs italic text-muted-foreground">
+                    &ldquo;{source.matchedText}&rdquo;
+                  </p>
+                )}
+              </div>
+            ))}
+          </List>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {report && report.error && (
+        <Alert tone="error">Error: {report.error}</Alert>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        Checked at {report?.checkedAt ? new Date(report.checkedAt).toLocaleString() : 'Unknown'}
+      </p>
+    </div>
   );
 }
-

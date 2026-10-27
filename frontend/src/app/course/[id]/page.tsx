@@ -5,12 +5,43 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Course, Announcement, Specialty, Quiz, Assessment, Assignment, AnnouncementComment, Lecture } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Alert,
+  Avatar,
+  Badge,
+  EmptyState,
+  Field,
+  List,
+  ListItem,
+  LoadingState,
+  PageHeader,
+  Section,
+  Select,
+  Tabs,
+  statusTone,
+} from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { FileText } from 'lucide-react';
+import {
+  Activity,
+  CheckCircle2,
+  ClipboardList,
+  ExternalLink,
+  FileText,
+  GraduationCap,
+  HelpCircle,
+  Megaphone,
+  Paperclip,
+  Play,
+  PlayCircle,
+  Plus,
+  Rss,
+  Users,
+} from 'lucide-react';
+
+const fileInputClass = 'file:mr-3 file:rounded-full file:border-0 file:bg-secondary file:px-3 file:py-1 file:text-[13px] file:font-medium file:text-foreground';
 
 // Helper function to convert relative URLs to absolute URLs
 const buildAssetUrl = (url?: string) => {
@@ -363,140 +394,73 @@ export default function CourseDetailPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   if (!course) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Course not found</div>;
+    return <Alert tone="error" title="Course not found">This course may have been removed or you may not have access.</Alert>;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white">{course.code} - {course.title}</h1>
-          <p className="mt-2 text-muted-foreground">{course.description}</p>
-        </div>
-        <div className="flex gap-2">
-          {user?.role === 'student' && !isEnrolled && (
-            <Button 
-              onClick={handleEnroll} 
-              disabled={enrolling}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {enrolling ? 'Enrolling...' : 'Enroll in Course'}
-            </Button>
-          )}
-          {isEnrolled && user?.role === 'student' && (
-            <Button variant="outline" disabled className="text-green-400 border-green-400">
-              ✓ Enrolled
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => router.back()}>
-            Back
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        back
+        eyebrow={course.code}
+        title={course.title}
+        description={course.description}
+        actions={
+          <>
+            {user?.role === 'student' && !isEnrolled && (
+              <Button onClick={handleEnroll} disabled={enrolling}>
+                {enrolling ? 'Enrolling…' : 'Enroll in course'}
+              </Button>
+            )}
+            {isEnrolled && user?.role === 'student' && (
+              <Badge tone="success" className="px-3 py-1 text-[13px]">
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Enrolled
+              </Badge>
+            )}
+          </>
+        }
+        className="mb-0 md:mb-0"
+      />
 
-      {/* Tabs */}
-      <div className="flex gap-1 md:gap-2 border-b border-white/10 overflow-x-auto pb-0 scrollbar-hide">
-        <button
-          onClick={() => setActiveTab('stream')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'stream'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Stream
-        </button>
-        <button
-          onClick={() => setActiveTab('announcements')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'announcements'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Announcements ({announcements.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('activity')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'activity'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Activity Log
-        </button>
-        <button
-          onClick={() => setActiveTab('assignments')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'assignments'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Assignments ({assignments.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('quizzes')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'quizzes'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Quizzes ({quizzes.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('assessments')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'assessments'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Assessments ({assessments.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('participants')}
-          className={`px-2 sm:px-3 md:px-4 py-2 font-medium transition-colors text-xs sm:text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-            activeTab === 'participants'
-              ? 'text-white border-b-2 border-purple-400'
-              : 'text-muted-foreground hover:text-white'
-          }`}
-        >
-          Participants ({participants.length})
-        </button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { value: 'stream', label: 'Stream' },
+          { value: 'announcements', label: 'Announcements', count: announcements.length },
+          { value: 'lectures', label: 'Lectures', count: lectures.length },
+          { value: 'activity', label: 'Activity log' },
+          { value: 'assignments', label: 'Assignments', count: assignments.length },
+          { value: 'quizzes', label: 'Quizzes', count: quizzes.length },
+          { value: 'assessments', label: 'Assessments', count: assessments.length },
+          { value: 'participants', label: 'Participants', count: participants.length },
+        ]}
+      />
 
-      {/* Stream Tab */}
       {activeTab === 'stream' && (
         <div className="space-y-4">
           {stream.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No activity in the stream yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={Rss} title="No activity yet" description="Updates from this course will appear here." />
           ) : (
             stream.map((item) => (
-              <Card key={item.stream_id} className="border-white/10 bg-white/5">
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white text-sm md:text-base">{item.title || 'Update'}</p>
-                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                        {item.creator_name} • {formatDate(item.created_at)}
-                      </p>
+              <Card key={item.stream_id}>
+                <CardContent className="space-y-3 p-5 md:p-6">
+                  <div className="flex items-start gap-3">
+                    <Avatar name={item.creator_name} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{item.creator_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(item.created_at)}</p>
                     </div>
-                    <span className="px-2 py-1 bg-purple-500/20 text-purple-200 rounded-full text-xs border border-purple-400/30 self-start whitespace-nowrap">
-                      {item.stream_type}
-                    </span>
+                    <Badge className="capitalize">{item.stream_type}</Badge>
                   </div>
-                  {item.content && <p className="text-white mt-2 text-sm md:text-base break-words">{item.content}</p>}
+                  <p className="text-[17px] font-semibold text-foreground">{item.title || 'Update'}</p>
+                  {item.content && (
+                    <p className="break-words whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{item.content}</p>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -504,34 +468,37 @@ export default function CourseDetailPage() {
         </div>
       )}
 
-      {/* Announcements Tab */}
       {activeTab === 'announcements' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-semibold text-white">Announcements</h2>
-            <Button onClick={() => setShowAnnouncementForm(!showAnnouncementForm)}>
-              {showAnnouncementForm ? 'Cancel' : 'New Announcement'}
+        <Section
+          title="Announcements"
+          actions={
+            <Button
+              variant={showAnnouncementForm ? 'outline' : 'default'}
+              onClick={() => setShowAnnouncementForm(!showAnnouncementForm)}
+            >
+              {showAnnouncementForm ? 'Cancel' : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  New announcement
+                </>
+              )}
             </Button>
-          </div>
-
+          }
+        >
           {showAnnouncementForm && (
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="text-white">Create Announcement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateAnnouncement} className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">Title</Label>
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateAnnouncement} className="space-y-5">
+                  <p className="text-[17px] font-semibold text-foreground">Create announcement</p>
+                  <Field label="Title" htmlFor="title">
                     <Input
                       id="title"
                       value={announcementForm.title}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="content">Content</Label>
+                  </Field>
+                  <Field label="Content" htmlFor="content">
                     <Textarea
                       id="content"
                       value={announcementForm.content}
@@ -539,172 +506,176 @@ export default function CourseDetailPage() {
                       required
                       rows={5}
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="attachmentUrl">Attachment URL (optional)</Label>
+                  </Field>
+                  <Field label="Attachment URL" htmlFor="attachmentUrl" hint="Optional">
                     <Input
                       id="attachmentUrl"
                       value={announcementForm.attachmentUrl}
                       onChange={(e) => setAnnouncementForm({ ...announcementForm, attachmentUrl: e.target.value })}
                     />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button type="submit">Post announcement</Button>
                   </div>
-                  <Button type="submit">Post Announcement</Button>
                 </form>
               </CardContent>
             </Card>
           )}
 
           {announcements.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No announcements yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={Megaphone} title="No announcements yet" description="Announcements posted to this course will show up here." />
           ) : (
             announcements.map((announcement) => (
-              <Card key={announcement.announcement_id} className="border-white/10 bg-white/5">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      {editingAnnouncement === announcement.announcement_id ? (
-                        <div className="space-y-3">
-                          <Input
-                            value={announcementForm.title}
-                            onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
-                            placeholder="Title"
-                            className="bg-background"
-                          />
-                          <Textarea
-                            value={announcementForm.content}
-                            onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })}
-                            placeholder="Content"
-                            rows={4}
-                            className="bg-background"
-                          />
-                          <Input
-                            value={announcementForm.attachmentUrl}
-                            onChange={(e) => setAnnouncementForm({ ...announcementForm, attachmentUrl: e.target.value })}
-                            placeholder="Attachment URL (optional)"
-                            className="bg-background"
-                          />
-                          <div className="flex gap-2">
+              <Card key={announcement.announcement_id}>
+                <CardContent className="p-5 md:p-6">
+                  {editingAnnouncement === announcement.announcement_id ? (
+                    <div className="space-y-4">
+                      <Field label="Title">
+                        <Input
+                          value={announcementForm.title}
+                          onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+                          placeholder="Title"
+                        />
+                      </Field>
+                      <Field label="Content">
+                        <Textarea
+                          value={announcementForm.content}
+                          onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })}
+                          placeholder="Content"
+                          rows={4}
+                        />
+                      </Field>
+                      <Field label="Attachment URL" hint="Optional">
+                        <Input
+                          value={announcementForm.attachmentUrl}
+                          onChange={(e) => setAnnouncementForm({ ...announcementForm, attachmentUrl: e.target.value })}
+                          placeholder="Attachment URL (optional)"
+                        />
+                      </Field>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingAnnouncement(null);
+                            setAnnouncementForm({ title: '', content: '', attachmentUrl: '' });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateAnnouncement(
+                            announcement.announcement_id,
+                            announcementForm.title,
+                            announcementForm.content,
+                            announcementForm.attachmentUrl
+                          )}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <Avatar name={announcement.creator_name} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{announcement.creator_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {announcement.creator_email} · {formatDate(announcement.created_at)}
+                        </p>
+                      </div>
+                      {!editingAnnouncement && (
+                        <div className="flex shrink-0 gap-1">
+                          {canEditAnnouncement(announcement) && (
                             <Button
                               size="sm"
-                              onClick={() => handleUpdateAnnouncement(
-                                announcement.announcement_id,
-                                announcementForm.title,
-                                announcementForm.content,
-                                announcementForm.attachmentUrl
-                              )}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
+                              variant="ghost"
                               onClick={() => {
-                                setEditingAnnouncement(null);
-                                setAnnouncementForm({ title: '', content: '', attachmentUrl: '' });
+                                setEditingAnnouncement(announcement.announcement_id);
+                                setAnnouncementForm({
+                                  title: announcement.title,
+                                  content: announcement.content,
+                                  attachmentUrl: announcement.attachment_url || '',
+                                });
                               }}
                             >
-                              Cancel
+                              Edit
                             </Button>
-                          </div>
+                          )}
+                          {canDeleteAnnouncement(announcement) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:bg-red-50"
+                              onClick={() => handleDeleteAnnouncement(announcement.announcement_id)}
+                            >
+                              Delete
+                            </Button>
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <h3 className="font-semibold text-white text-lg">{announcement.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {announcement.creator_name} ({announcement.creator_email}) • {formatDate(announcement.created_at)}
-                          </p>
-                        </>
                       )}
                     </div>
-                    {!editingAnnouncement && (
-                      <div className="flex gap-2">
-                        {canEditAnnouncement(announcement) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingAnnouncement(announcement.announcement_id);
-                              setAnnouncementForm({
-                                title: announcement.title,
-                                content: announcement.content,
-                                attachmentUrl: announcement.attachment_url || '',
-                              });
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        )}
-                        {canDeleteAnnouncement(announcement) && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteAnnouncement(announcement.announcement_id)}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                   {!editingAnnouncement && (
                     <>
-                      <p className="text-white mt-3 whitespace-pre-wrap">{announcement.content}</p>
+                      <h3 className="mt-4 text-[17px] font-semibold text-foreground">{announcement.title}</h3>
+                      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{announcement.content}</p>
                       {announcement.attachment_url && (
                         <a
                           href={announcement.attachment_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-block text-purple-400 hover:text-purple-300"
+                          className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline underline-offset-4"
                         >
-                          View Attachment →
+                          <Paperclip className="h-4 w-4" strokeWidth={1.75} />
+                          View attachment
                         </a>
                       )}
 
-                      {/* Comments Section */}
-                      <div className="mt-6 pt-4 border-t border-white/10">
-                        <h4 className="text-white font-semibold mb-3">Comments</h4>
-                        
-                        {/* Existing Comments */}
-                        <div className="space-y-3 mb-4">
-                          {(announcementComments[announcement.announcement_id] || []).map((comment) => (
-                            <div key={comment.comment_id} className="bg-white/5 rounded-lg p-3 border border-white/10">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm font-semibold text-white">
-                                    {comment.creator_name} ({comment.creator_email})
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mb-1">
+                      <div className="mt-5 border-t border-border/70 pt-4">
+                        <p className="mb-3 text-xs font-medium text-muted-foreground">
+                          Comments
+                          {(announcementComments[announcement.announcement_id] || []).length > 0 && (
+                            <span className="ml-1 tabular-nums">· {(announcementComments[announcement.announcement_id] || []).length}</span>
+                          )}
+                        </p>
+
+                        {(announcementComments[announcement.announcement_id] || []).length > 0 && (
+                          <ul className="mb-4 space-y-3 pl-1 sm:pl-4">
+                            {(announcementComments[announcement.announcement_id] || []).map((comment) => (
+                              <li key={comment.comment_id} className="flex items-start gap-3">
+                                <Avatar name={comment.creator_name} className="h-7 w-7 text-[10px]" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs text-muted-foreground">
+                                    <span className="font-medium text-foreground">{comment.creator_name}</span>
+                                    {comment.creator_email && <span className="hidden sm:inline"> ({comment.creator_email})</span>}
+                                    {' · '}
                                     {formatDate(comment.created_at)}
                                   </p>
-                                  <p className="text-white text-sm">{comment.content}</p>
+                                  <p className="mt-0.5 break-words text-sm text-foreground">{comment.content}</p>
                                 </div>
                                 {(comment.created_by === user?.user_id || user?.role === 'admin') && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="text-red-400 hover:text-red-300"
+                                    className="h-7 px-2.5 text-xs text-destructive hover:bg-red-50"
                                     onClick={() => handleDeleteComment(comment.comment_id, announcement.announcement_id)}
                                   >
                                     Delete
                                   </Button>
                                 )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
 
-                        {/* Add Comment Form */}
-                        <div className="flex gap-2">
-                          <Textarea
+                        <div className="flex items-center gap-2">
+                          <Input
                             value={commentForms[announcement.announcement_id] || ''}
                             onChange={(e) => setCommentForms({ ...commentForms, [announcement.announcement_id]: e.target.value })}
-                            placeholder="Add a comment..."
-                            rows={2}
-                            className="flex-1 bg-background text-white"
+                            placeholder="Add a comment…"
+                            className="h-9 flex-1 text-sm"
                           />
                           <Button
                             size="sm"
@@ -720,207 +691,191 @@ export default function CourseDetailPage() {
               </Card>
             ))
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Activity Log Tab */}
       {activeTab === 'activity' && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">Activity Log</h2>
+        <Section title="Activity log">
           {activityLogs.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No activity logged yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={Activity} title="No activity logged yet" />
           ) : (
-            <div className="space-y-2">
+            <List>
               {activityLogs.map((log) => (
-                <Card key={log.log_id} className="border-white/10 bg-white/5">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-white">{log.activity_description}</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {log.user_name || 'System'} • {formatDate(log.created_at)}
-                        </p>
-                      </div>
-                      <span className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded-full text-xs border border-blue-400/30">
-                        {log.activity_type}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ListItem key={log.log_id} className="items-start">
+                  <Avatar name={log.user_name || 'System'} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground">{log.activity_description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {log.user_name || 'System'} · {formatDate(log.created_at)}
+                    </p>
+                  </div>
+                  <Badge className="shrink-0">{log.activity_type}</Badge>
+                </ListItem>
               ))}
-            </div>
+            </List>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Lectures Tab */}
       {activeTab === 'lectures' && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">Course Lectures</h2>
+        <Section title="Lectures">
           {lectures.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                {user?.role === 'student' 
-                  ? 'No lectures available yet, or you may need to enroll in this course to view lectures.'
-                  : 'No lectures available yet.'}
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={PlayCircle}
+              title="No lectures yet"
+              description={user?.role === 'student'
+                ? 'No lectures available yet, or you may need to enroll in this course to view lectures.'
+                : 'No lectures available yet.'}
+            />
           ) : (
             <div className="space-y-4">
               {lectures
                 .sort((a, b) => (a.lecture_number || 0) - (b.lecture_number || 0))
                 .map((lecture) => (
-                  <Card key={lecture.lecture_id} className="border-white/10 bg-white/5">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            {lecture.lecture_number && (
-                              <span className="px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full text-sm font-semibold border border-purple-400/30">
-                                Lecture {lecture.lecture_number}
-                              </span>
-                            )}
-                            <h3 className="font-semibold text-white text-lg">{lecture.title}</h3>
-                          </div>
+                  <Card key={lecture.lecture_id}>
+                    <CardContent className="space-y-4 p-5 md:p-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                          <PlayCircle className="h-4 w-4" strokeWidth={1.75} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[17px] font-semibold text-foreground">{lecture.title}</p>
                           {lecture.created_at && (
-                            <p className="text-sm text-muted-foreground">
-                              Added {formatDate(lecture.created_at)}
-                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">Added {formatDate(lecture.created_at)}</p>
                           )}
                         </div>
+                        {lecture.lecture_number && (
+                          <Badge className="shrink-0 tabular-nums">Lecture {lecture.lecture_number}</Badge>
+                        )}
                       </div>
 
                       {lecture.content && (
-                        <div className="mb-4">
-                          <p className="text-white whitespace-pre-wrap">{lecture.content}</p>
-                        </div>
+                        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{lecture.content}</p>
                       )}
 
-                      <div className="flex flex-wrap gap-3 mt-4">
-                        {lecture.video_url && (
-                          <a
-                            href={lecture.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/30 transition-colors border border-red-400/30"
-                          >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                            </svg>
-                            Watch Video
-                          </a>
-                        )}
-                        {lecture.pdf_url && (
-                          <a
-                            href={buildAssetUrl(lecture.pdf_url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-200 rounded-lg hover:bg-blue-500/30 transition-colors border border-blue-400/30"
-                          >
-                            <FileText className="w-5 h-5" />
-                            View PDF
-                          </a>
-                        )}
-                      </div>
+                      {lecture.video_url && (
+                        <a
+                          href={lecture.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex aspect-video w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-black text-white"
+                        >
+                          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black transition-opacity group-hover:opacity-90">
+                            <Play className="ml-0.5 h-6 w-6" fill="currentColor" strokeWidth={1.75} />
+                          </span>
+                          <span className="text-sm font-medium">Watch video</span>
+                        </a>
+                      )}
+
+                      {lecture.pdf_url && (
+                        <div className="flex items-center gap-3 overflow-hidden rounded-2xl bg-secondary/60 p-4">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-muted-foreground">
+                            <FileText className="h-4 w-4" strokeWidth={1.75} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground">Lecture notes</p>
+                            <p className="text-xs text-muted-foreground">PDF document</p>
+                          </div>
+                          <Button asChild size="sm" variant="outline">
+                            <a href={buildAssetUrl(lecture.pdf_url)} target="_blank" rel="noopener noreferrer">
+                              View PDF
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
             </div>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Assignments Tab */}
       {activeTab === 'assignments' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-semibold text-white">Assignments</h2>
-            {isTeacherOrAdmin && (
-              <Button onClick={() => setShowAssignmentForm(!showAssignmentForm)}>
-                {showAssignmentForm ? 'Cancel' : 'New Assignment'}
-              </Button>
-            )}
-          </div>
-
+        <Section
+          title="Assignments"
+          actions={isTeacherOrAdmin && (
+            <Button
+              variant={showAssignmentForm ? 'outline' : 'default'}
+              onClick={() => setShowAssignmentForm(!showAssignmentForm)}
+            >
+              {showAssignmentForm ? 'Cancel' : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  New assignment
+                </>
+              )}
+            </Button>
+          )}
+        >
           {isTeacherOrAdmin && showAssignmentForm && (
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="text-white">Create Assignment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateAssignment} className="space-y-4">
-                  <div>
-                    <Label htmlFor="assignmentTitle">Title</Label>
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateAssignment} className="space-y-5">
+                  <p className="text-[17px] font-semibold text-foreground">Create assignment</p>
+                  <Field label="Title" htmlFor="assignmentTitle">
                     <Input
                       id="assignmentTitle"
                       value={assignmentForm.title}
                       onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })}
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="assignmentDescription">Description</Label>
+                  </Field>
+                  <Field label="Description" htmlFor="assignmentDescription">
                     <Textarea
                       id="assignmentDescription"
                       value={assignmentForm.description}
                       onChange={(e) => setAssignmentForm({ ...assignmentForm, description: e.target.value })}
                       rows={4}
                     />
+                  </Field>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Total marks" htmlFor="assignmentTotalMarks">
+                      <Input
+                        id="assignmentTotalMarks"
+                        type="number"
+                        value={assignmentForm.totalMarks}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, totalMarks: e.target.value })}
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="100"
+                      />
+                    </Field>
+                    <Field label="Due date" htmlFor="assignmentDueDate">
+                      <Input
+                        id="assignmentDueDate"
+                        type="datetime-local"
+                        value={assignmentForm.dueDate}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, dueDate: e.target.value })}
+                      />
+                    </Field>
                   </div>
-                  <div>
-                    <Label htmlFor="assignmentTotalMarks">Total Marks</Label>
-                    <Input
-                      id="assignmentTotalMarks"
-                      type="number"
-                      value={assignmentForm.totalMarks}
-                      onChange={(e) => setAssignmentForm({ ...assignmentForm, totalMarks: e.target.value })}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="100"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="assignmentPdf">Upload PDF (optional)</Label>
+                  <Field label="PDF" htmlFor="assignmentPdf" hint="Optional">
                     <Input
                       id="assignmentPdf"
                       type="file"
                       accept=".pdf"
                       onChange={(e) => setAssignmentPdf(e.target.files?.[0] || null)}
-                      className="text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                      className={fileInputClass}
                     />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button type="submit">Create assignment</Button>
                   </div>
-                  <div>
-                    <Label htmlFor="assignmentDueDate">Due Date</Label>
-                    <Input
-                      id="assignmentDueDate"
-                      type="datetime-local"
-                      value={assignmentForm.dueDate}
-                      onChange={(e) => setAssignmentForm({ ...assignmentForm, dueDate: e.target.value })}
-                    />
-                  </div>
-                  <Button type="submit">Create Assignment</Button>
                 </form>
               </CardContent>
             </Card>
           )}
 
           {assignments.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No assignments available yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={ClipboardList} title="No assignments yet" description="Assignments for this course will appear here." />
           ) : (
-            <div className="grid gap-2 md:gap-3 lg:gap-4">
+            <List>
               {assignments.map((assignment) => (
-                <Card 
-                  key={assignment.assignment_id} 
-                  className="border-white/10 bg-white/5 hover:bg-white/10 transition-all cursor-pointer hover:border-purple-500/30"
+                <div
+                  key={assignment.assignment_id}
+                  className="flex w-full cursor-pointer items-center gap-4 px-4 py-3.5 transition-colors hover:bg-secondary/60 md:px-5"
                   onClick={() => {
                     if (user?.role === 'student') {
                       router.push(`/student/assignments/${assignment.assignment_id}`);
@@ -929,120 +884,109 @@ export default function CourseDetailPage() {
                     }
                   }}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-2 md:gap-3 lg:gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-white text-lg hover:text-purple-300 transition-colors">
-                            {assignment.title}
-                          </h3>
-                          <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
-                            Assignment
-                          </span>
-                        </div>
-                        {assignment.description && (
-                          <p className="text-muted-foreground mt-1 line-clamp-2">{assignment.description}</p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4 mt-3 text-sm">
-                          {assignment.pdf_url && (
-                            <a
-                              href={assignment.pdf_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300"
-                            >
-                              <FileText className="h-4 w-4" />
-                              PDF
-                            </a>
-                          )}
-                          {assignment.due_date && (
-                            <span className="text-purple-300">
-                              Due: {formatDate(assignment.due_date)}
-                            </span>
-                          )}
-                          {assignment.total_marks && (
-                            <span className="text-muted-foreground">
-                              {assignment.total_marks} points
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {user?.role === 'student' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/student/assignments/${assignment.assignment_id}`);
-                          }}
-                          className="shrink-0"
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                    <ClipboardList className="h-4 w-4" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-medium text-foreground">{assignment.title}</p>
+                    {assignment.description && (
+                      <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{assignment.description}</p>
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {assignment.due_date && <span>Due {formatDate(assignment.due_date)}</span>}
+                      {assignment.total_marks && <span className="tabular-nums">{assignment.total_marks} points</span>}
+                      {assignment.pdf_url && (
+                        <a
+                          href={assignment.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-4"
                         >
-                          {assignment.submission_status === 'submitted' ? 'View' : 'Open'}
-                        </Button>
-                      )}
-                      {(user?.role === 'teacher' || user?.role === 'admin') && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/teacher/assignments/${assignment.assignment_id}`);
-                          }}
-                          className="shrink-0"
-                        >
-                          Grade
-                        </Button>
+                          <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          PDF
+                        </a>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  {user?.role === 'student' && assignment.submission_status && (
+                    <Badge tone={statusTone(assignment.submission_status)} className="hidden capitalize sm:inline-flex">
+                      {assignment.submission_status}
+                    </Badge>
+                  )}
+                  {user?.role === 'student' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/student/assignments/${assignment.assignment_id}`);
+                      }}
+                      className="shrink-0"
+                    >
+                      {assignment.submission_status === 'submitted' ? 'View' : 'Open'}
+                    </Button>
+                  )}
+                  {(user?.role === 'teacher' || user?.role === 'admin') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/teacher/assignments/${assignment.assignment_id}`);
+                      }}
+                      className="shrink-0"
+                    >
+                      Grade
+                    </Button>
+                  )}
+                </div>
               ))}
-            </div>
+            </List>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Quizzes Tab */}
       {activeTab === 'quizzes' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-semibold text-white">Quizzes</h2>
-            {isTeacherOrAdmin && (
-              <Button onClick={() => setShowQuizForm(!showQuizForm)}>
-                {showQuizForm ? 'Cancel' : 'New Quiz'}
-              </Button>
-            )}
-          </div>
-
+        <Section
+          title="Quizzes"
+          actions={isTeacherOrAdmin && (
+            <Button
+              variant={showQuizForm ? 'outline' : 'default'}
+              onClick={() => setShowQuizForm(!showQuizForm)}
+            >
+              {showQuizForm ? 'Cancel' : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  New quiz
+                </>
+              )}
+            </Button>
+          )}
+        >
           {isTeacherOrAdmin && showQuizForm && (
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="text-white">Create Quiz</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateQuiz} className="space-y-4">
-                  <div>
-                    <Label htmlFor="quizTitle">Title</Label>
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateQuiz} className="space-y-5">
+                  <p className="text-[17px] font-semibold text-foreground">Create quiz</p>
+                  <Field label="Title" htmlFor="quizTitle">
                     <Input
                       id="quizTitle"
                       value={quizForm.title}
                       onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="quizDescription">Description</Label>
+                  </Field>
+                  <Field label="Description" htmlFor="quizDescription">
                     <Textarea
                       id="quizDescription"
                       value={quizForm.description}
                       onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
                       rows={3}
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                    <div>
-                      <Label htmlFor="quizTotalMarks">Total Marks</Label>
+                  </Field>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Total marks" htmlFor="quizTotalMarks">
                       <Input
                         id="quizTotalMarks"
                         type="number"
@@ -1050,38 +994,34 @@ export default function CourseDetailPage() {
                         onChange={(e) => setQuizForm({ ...quizForm, totalMarks: e.target.value })}
                         required
                       />
-                    </div>
-                    <div>
-                      <Label htmlFor="quizTimeLimit">Time Limit (minutes, optional)</Label>
+                    </Field>
+                    <Field label="Time limit (minutes)" htmlFor="quizTimeLimit" hint="Optional">
                       <Input
                         id="quizTimeLimit"
                         type="number"
                         value={quizForm.timeLimit}
                         onChange={(e) => setQuizForm({ ...quizForm, timeLimit: e.target.value })}
                       />
-                    </div>
+                    </Field>
                   </div>
-                  <div>
-                    <Label htmlFor="quizDueDate">Due Date</Label>
+                  <Field label="Due date" htmlFor="quizDueDate">
                     <Input
                       id="quizDueDate"
                       type="datetime-local"
                       value={quizForm.dueDate}
                       onChange={(e) => setQuizForm({ ...quizForm, dueDate: e.target.value })}
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="quizPdf">Upload PDF (optional)</Label>
+                  </Field>
+                  <Field label="PDF" htmlFor="quizPdf" hint="Optional">
                     <Input
                       id="quizPdf"
                       type="file"
                       accept=".pdf"
                       onChange={(e) => setQuizPdf(e.target.files?.[0] || null)}
-                      className="text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                      className={fileInputClass}
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="googleFormsUrl">Google Forms URL (optional)</Label>
+                  </Field>
+                  <Field label="Google Forms URL" htmlFor="googleFormsUrl" hint="Optional. Paste your Google Forms URL here to embed the quiz.">
                     <Input
                       id="googleFormsUrl"
                       type="url"
@@ -1089,155 +1029,160 @@ export default function CourseDetailPage() {
                       onChange={(e) => setQuizForm({ ...quizForm, googleFormsUrl: e.target.value })}
                       placeholder="https://docs.google.com/forms/..."
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Paste your Google Forms URL here to embed the quiz
-                    </p>
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button type="submit">Create quiz</Button>
                   </div>
-                  <Button type="submit">Create Quiz</Button>
                 </form>
               </CardContent>
             </Card>
           )}
 
           {quizzes.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No quizzes available yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={HelpCircle} title="No quizzes yet" description="Quizzes for this course will appear here." />
           ) : (
-            <div className="grid gap-2 md:gap-3 lg:gap-4">
+            <List>
               {quizzes.map((quiz) => (
-                <Card key={quiz.quiz_id} className="border-white/10 bg-white/5">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white text-lg">{quiz.title}</h3>
-                        <p className="text-muted-foreground mt-1">{quiz.description}</p>
+                <div key={quiz.quiz_id}>
+                  <ListItem className="items-start sm:items-center">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                      <HelpCircle className="h-4 w-4" strokeWidth={1.75} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-medium text-foreground">{quiz.title}</p>
+                      {quiz.description && (
+                        <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{quiz.description}</p>
+                      )}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="tabular-nums">{quiz.total_marks} marks</span>
+                        {quiz.time_limit && <span className="tabular-nums">{quiz.time_limit} min</span>}
+                        {quiz.due_date && <span>Due {new Date(quiz.due_date).toLocaleDateString()}</span>}
                         {quiz.pdf_url && (
                           <a
                             href={quiz.pdf_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-2 inline-block text-purple-400 hover:text-purple-300 text-sm"
+                            className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-4"
                           >
-                            📄 View Quiz PDF →
+                            <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            Quiz PDF
                           </a>
                         )}
                         {quiz.google_forms_url && (
-                          <div className="mt-3">
-                            <a
-                              href={quiz.google_forms_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-block text-purple-400 hover:text-purple-300 text-sm mb-2"
-                            >
-                              📝 Open Google Forms Quiz →
-                            </a>
-                            <iframe
-                              src={quiz.google_forms_url.replace('/viewform', '/viewform?embedded=true')}
-                              width="100%"
-                              height="600"
-                              frameBorder="0"
-                              marginHeight={0}
-                              marginWidth={0}
-                              className="mt-2 rounded-lg"
-                            >
-                              Loading…
-                            </iframe>
-                          </div>
+                          <a
+                            href={quiz.google_forms_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-4"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            Open Google Forms
+                          </a>
                         )}
-                        <div className="flex gap-2 md:gap-3 lg:gap-4 mt-3 text-sm text-muted-foreground">
-                          <span>Marks: {quiz.total_marks}</span>
-                          {quiz.time_limit && <span>Time: {quiz.time_limit} min</span>}
-                          {quiz.due_date && (
-                            <span>Due: {new Date(quiz.due_date).toLocaleDateString()}</span>
-                          )}
-                        </div>
                       </div>
-                      {user?.role === 'student' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/student/quizzes/${quiz.quiz_id}`)}
-                        >
-                          Take Quiz
-                        </Button>
-                      )}
-                      {isTeacherOrAdmin && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/questions`)}
-                        >
-                          Manage
-                        </Button>
-                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    {quiz.time_limit && (
+                      <Badge className="hidden sm:inline-flex">Timed</Badge>
+                    )}
+                    {user?.role === 'student' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => router.push(`/student/quizzes/${quiz.quiz_id}`)}
+                      >
+                        Take quiz
+                      </Button>
+                    )}
+                    {isTeacherOrAdmin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/questions`)}
+                      >
+                        Manage
+                      </Button>
+                    )}
+                  </ListItem>
+                  {quiz.google_forms_url && (
+                    <div className="px-4 pb-4 md:px-5 md:pb-5">
+                      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
+                        <iframe
+                          src={quiz.google_forms_url.replace('/viewform', '/viewform?embedded=true')}
+                          width="100%"
+                          height="600"
+                          frameBorder="0"
+                          marginHeight={0}
+                          marginWidth={0}
+                          className="block"
+                        >
+                          Loading…
+                        </iframe>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
-            </div>
+            </List>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Assessments Tab */}
       {activeTab === 'assessments' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-2xl font-semibold text-white">Assessments</h2>
-            {isTeacherOrAdmin && (
-              <Button onClick={() => setShowAssessmentForm(!showAssessmentForm)}>
-                {showAssessmentForm ? 'Cancel' : 'New Assessment'}
-              </Button>
-            )}
-          </div>
-
+        <Section
+          title="Assessments"
+          actions={isTeacherOrAdmin && (
+            <Button
+              variant={showAssessmentForm ? 'outline' : 'default'}
+              onClick={() => setShowAssessmentForm(!showAssessmentForm)}
+            >
+              {showAssessmentForm ? 'Cancel' : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  New assessment
+                </>
+              )}
+            </Button>
+          )}
+        >
           {isTeacherOrAdmin && showAssessmentForm && (
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="text-white">Create Assessment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateAssessment} className="space-y-4">
-                  <div>
-                    <Label htmlFor="assessmentTitle">Title</Label>
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateAssessment} className="space-y-5">
+                  <p className="text-[17px] font-semibold text-foreground">Create assessment</p>
+                  <Field label="Title" htmlFor="assessmentTitle">
                     <Input
                       id="assessmentTitle"
                       value={assessmentForm.title}
                       onChange={(e) => setAssessmentForm({ ...assessmentForm, title: e.target.value })}
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="assessmentDescription">Description</Label>
+                  </Field>
+                  <Field label="Description" htmlFor="assessmentDescription">
                     <Textarea
                       id="assessmentDescription"
                       value={assessmentForm.description}
                       onChange={(e) => setAssessmentForm({ ...assessmentForm, description: e.target.value })}
                       rows={3}
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                    <div>
-                      <Label htmlFor="assessmentType">Assessment Type</Label>
-                      <select
+                  </Field>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Assessment type" htmlFor="assessmentType">
+                      <Select
                         id="assessmentType"
                         value={assessmentForm.assessmentType}
                         onChange={(e) => setAssessmentForm({ ...assessmentForm, assessmentType: e.target.value })}
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-white"
                         required
                       >
                         <option value="midterm">Midterm</option>
-                        <option value="final">Final Exam</option>
+                        <option value="final">Final exam</option>
                         <option value="project">Project</option>
                         <option value="presentation">Presentation</option>
                         <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label htmlFor="assessmentWeight">Weight Percentage (%)</Label>
+                      </Select>
+                    </Field>
+                    <Field label="Weight (%)" htmlFor="assessmentWeight">
                       <Input
                         id="assessmentWeight"
                         type="number"
@@ -1246,11 +1191,8 @@ export default function CourseDetailPage() {
                         onChange={(e) => setAssessmentForm({ ...assessmentForm, weightPercentage: e.target.value })}
                         required
                       />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                    <div>
-                      <Label htmlFor="assessmentTotalMarks">Total Marks</Label>
+                    </Field>
+                    <Field label="Total marks" htmlFor="assessmentTotalMarks">
                       <Input
                         id="assessmentTotalMarks"
                         type="number"
@@ -1258,152 +1200,143 @@ export default function CourseDetailPage() {
                         onChange={(e) => setAssessmentForm({ ...assessmentForm, totalMarks: e.target.value })}
                         required
                       />
-                    </div>
-                    <div>
-                      <Label htmlFor="assessmentDueDate">Due Date</Label>
+                    </Field>
+                    <Field label="Due date" htmlFor="assessmentDueDate">
                       <Input
                         id="assessmentDueDate"
                         type="datetime-local"
                         value={assessmentForm.dueDate}
                         onChange={(e) => setAssessmentForm({ ...assessmentForm, dueDate: e.target.value })}
                       />
-                    </div>
+                    </Field>
                   </div>
-                  <div>
-                    <Label htmlFor="assessmentPdf">Upload PDF (optional)</Label>
+                  <Field label="PDF" htmlFor="assessmentPdf" hint="Optional">
                     <Input
                       id="assessmentPdf"
                       type="file"
                       accept=".pdf"
                       onChange={(e) => setAssessmentPdf(e.target.files?.[0] || null)}
-                      className="text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                      className={fileInputClass}
                     />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button type="submit">Create assessment</Button>
                   </div>
-                  <Button type="submit">Create Assessment</Button>
                 </form>
               </CardContent>
             </Card>
           )}
 
           {assessments.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No assessments available yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={GraduationCap} title="No assessments yet" description="Assessments for this course will appear here." />
           ) : (
-            <div className="grid gap-2 md:gap-3 lg:gap-4">
+            <List>
               {assessments.map((assessment) => (
-                <Card key={assessment.assessment_id} className="border-white/10 bg-white/5">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white text-lg">{assessment.title}</h3>
-                        <p className="text-muted-foreground mt-1">{assessment.description}</p>
-                        {assessment.pdf_url && (
-                          <a
-                            href={assessment.pdf_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-block text-purple-400 hover:text-purple-300 text-sm"
-                          >
-                            📄 View Assessment PDF →
-                          </a>
-                        )}
-                        <div className="flex gap-2 md:gap-3 lg:gap-4 mt-3 text-sm text-muted-foreground">
-                          <span className="capitalize">Type: {assessment.assessment_type}</span>
-                          <span>Marks: {assessment.total_marks}</span>
-                          <span>Weight: {assessment.weight_percentage}%</span>
-                          {assessment.due_date && (
-                            <span>Due: {new Date(assessment.due_date).toLocaleDateString()}</span>
-                          )}
-                        </div>
-                      </div>
-                      {user?.role === 'student' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/student/assessments/${assessment.assessment_id}`)}
+                <ListItem key={assessment.assessment_id} className="items-start sm:items-center">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                    <GraduationCap className="h-4 w-4" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-medium text-foreground">{assessment.title}</p>
+                    {assessment.description && (
+                      <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{assessment.description}</p>
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="tabular-nums">{assessment.total_marks} marks</span>
+                      <span className="tabular-nums">{assessment.weight_percentage}% weight</span>
+                      {assessment.due_date && <span>Due {new Date(assessment.due_date).toLocaleDateString()}</span>}
+                      {assessment.pdf_url && (
+                        <a
+                          href={assessment.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-4"
                         >
-                          Submit
-                        </Button>
-                      )}
-                      {isTeacherOrAdmin && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}/submissions`)}
-                        >
-                          View Submissions
-                        </Button>
+                          <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Assessment PDF
+                        </a>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <Badge className="hidden capitalize sm:inline-flex">{assessment.assessment_type}</Badge>
+                  {user?.role === 'student' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => router.push(`/student/assessments/${assessment.assessment_id}`)}
+                    >
+                      Submit
+                    </Button>
+                  )}
+                  {isTeacherOrAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}/submissions`)}
+                    >
+                      View submissions
+                    </Button>
+                  )}
+                </ListItem>
               ))}
-            </div>
+            </List>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Participants Tab */}
       {activeTab === 'participants' && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">Course Participants</h2>
+        <Section title="Participants">
           {participants.length === 0 ? (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-                No participants enrolled yet.
-              </CardContent>
-            </Card>
+            <EmptyState icon={Users} title="No participants yet" description="Students enrolled in this course will appear here." />
           ) : (
-            <Card className="border-white/10 bg-white/5">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="text-left p-4 text-white font-semibold">Name</th>
-                        <th className="text-left p-4 text-white font-semibold">Email</th>
-                        <th className="text-left p-4 text-white font-semibold">Major</th>
-                        <th className="text-left p-4 text-white font-semibold">Enrollment Year</th>
-                        <th className="text-left p-4 text-white font-semibold">Term</th>
-                        <th className="text-left p-4 text-white font-semibold">Grade</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {participants.map((participant) => (
-                        <tr key={participant.enrollment_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                          <td className="p-4 text-white">{participant.student_name || 'N/A'}</td>
-                          <td className="p-4">
-                            <a
-                              href={`mailto:${participant.student_email}`}
-                              className="text-purple-400 hover:text-purple-300 underline"
-                            >
-                              {participant.student_email || 'N/A'}
-                            </a>
-                          </td>
-                          <td className="p-4 text-muted-foreground">{participant.major || 'N/A'}</td>
-                          <td className="p-4 text-muted-foreground">{participant.enrollment_year || 'N/A'}</td>
-                          <td className="p-4 text-muted-foreground">{participant.term || 'N/A'}</td>
-                          <td className="p-4">
-                            {participant.grade ? (
-                              <span className="px-2 py-1 bg-purple-500/20 text-purple-200 rounded-full text-sm border border-purple-400/30">
-                                {participant.grade}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
+            <Card className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Major</th>
+                    <th>Enrollment year</th>
+                    <th>Term</th>
+                    <th>Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {participants.map((participant) => (
+                    <tr key={participant.enrollment_id}>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <Avatar name={participant.student_name} className="h-8 w-8" />
+                          <span className="whitespace-nowrap font-medium text-foreground">{participant.student_name || 'N/A'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <a
+                          href={`mailto:${participant.student_email}`}
+                          className="text-primary hover:underline underline-offset-4"
+                        >
+                          {participant.student_email || 'N/A'}
+                        </a>
+                      </td>
+                      <td className="text-muted-foreground">{participant.major || 'N/A'}</td>
+                      <td className="tabular-nums text-muted-foreground">{participant.enrollment_year || 'N/A'}</td>
+                      <td className="text-muted-foreground">{participant.term || 'N/A'}</td>
+                      <td>
+                        {participant.grade ? (
+                          <Badge tone="primary">{participant.grade}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </Card>
           )}
-        </div>
+        </Section>
       )}
     </div>
   );

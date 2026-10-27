@@ -3,14 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Alert, Select } from '@/components/ui/page';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -65,47 +60,28 @@ export default function SignupPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8">
-        <Card className="w-full max-w-md border-white/10 bg-white/5">
-          <CardHeader className="p-4 md:p-6 lg:p-8">
-            <CardTitle className="text-2xl md:text-3xl text-white">Create an account</CardTitle>
-            <CardDescription className="text-xs md:text-sm text-muted-foreground mt-2">
-              Sign up to start building courses, uploading lectures, and tracking enrollments.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 lg:p-8">
+      <AuthShell title="Create your account" description="Join LMS Studio as a student or teacher.">
             <div className="space-y-3 md:space-y-4">
-              <div className="h-10 w-full rounded-md bg-white/5 animate-pulse" />
-              <div className="h-10 w-full rounded-md bg-white/5 animate-pulse" />
-              <div className="h-10 w-full rounded-md bg-white/5 animate-pulse" />
-              <div className="h-10 w-full rounded-md bg-white/5 animate-pulse" />
+              <div className="h-11 w-full rounded-xl bg-secondary animate-pulse" />
+              <div className="h-11 w-full rounded-xl bg-secondary animate-pulse" />
+              <div className="h-11 w-full rounded-xl bg-secondary animate-pulse" />
+              <div className="h-11 w-full rounded-xl bg-secondary animate-pulse" />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader className="p-4 md:p-6 lg:p-8">
-          <CardTitle className="text-2xl md:text-3xl text-white">Create an account</CardTitle>
-          <CardDescription className="text-xs md:text-sm text-muted-foreground mt-2">
-            Sign up to start building courses, uploading lectures, and tracking enrollments.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 md:p-6 lg:p-8">
+    <AuthShell title="Create your account" description="Join LMS Studio as a student or teacher.">
           <form className="space-y-4 md:space-y-5" onSubmit={handleSubmit} suppressHydrationWarning>
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-sm md:text-base">Full name</Label>
+              <Label htmlFor="fullName">Full name</Label>
               <Input
                 id="fullName"
                 name="fullName"
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
-                placeholder="Olivia Instructor"
-                className="text-sm md:text-base"
+                placeholder="Olivia Martin"
                 required
               />
             </div>
@@ -131,27 +107,21 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <select
+              <Select
                 id="role"
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 {roles.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {role === 'teacher' && (
               <div className="space-y-2">
-                <Label htmlFor="specialtyTags">
-                  Specialty Tags (Keywords)
-                  <span className="text-xs text-muted-foreground ml-2">
-                    Comma-separated keywords like: mathematics, calculus, algebra
-                  </span>
-                </Label>
+                <Label htmlFor="specialtyTags">Specialties</Label>
                 <Input
                   id="specialtyTags"
                   name="specialtyTags"
@@ -164,24 +134,22 @@ export default function SignupPage() {
                 </p>
               </div>
             )}
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-indigo-500" disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign up'}
+            {error && <Alert tone="error">{error}</Alert>}
+            <Button type="submit" size="lg" className="w-full" disabled={loading}>
+              {loading ? 'Creating account…' : 'Create account'}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
               <button
                 type="button"
-                className="text-purple-400 underline-offset-4 hover:underline"
+                className="text-primary underline-offset-4 hover:underline"
                 onClick={() => router.push('/login')}
               >
                 Sign in
               </button>
             </p>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 

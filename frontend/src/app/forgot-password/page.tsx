@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/page';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -36,15 +37,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Forgot Password</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Enter your email address and we'll send you an OTP to reset your password
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <AuthShell title="Forgot password" description="Enter your email address and we'll send you a code to reset your password.">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -57,14 +50,14 @@ export default function ForgotPasswordPage() {
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            {message && <p className="text-sm text-green-400">{message}</p>}
+            {error && <Alert tone="error">{error}</Alert>}
+            {message && <Alert tone="success">{message}</Alert>}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500"
+              className="w-full"
               disabled={loading}
             >
-              {loading ? 'Sending OTP...' : 'Send OTP'}
+              {loading ? 'Sending code…' : 'Send code'}
             </Button>
             <Button
               type="button"
@@ -72,12 +65,10 @@ export default function ForgotPasswordPage() {
               className="w-full"
               onClick={() => router.push('/login')}
             >
-              Back to Login
+              Back to sign in
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 

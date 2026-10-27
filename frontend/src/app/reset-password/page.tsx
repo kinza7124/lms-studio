@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/page';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -70,15 +71,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Reset Password</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Enter your new password
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <AuthShell title="Reset password" description="Enter your new password">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
@@ -102,13 +95,13 @@ export default function ResetPasswordPage() {
                 minLength={6}
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <Alert tone="error">{error}</Alert>}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500"
+              className="w-full"
               disabled={loading}
             >
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? 'Resetting…' : 'Reset password'}
             </Button>
             <Button
               type="button"
@@ -116,12 +109,10 @@ export default function ResetPasswordPage() {
               className="w-full"
               onClick={() => router.push('/login')}
             >
-              Back to Login
+              Back to sign in
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 

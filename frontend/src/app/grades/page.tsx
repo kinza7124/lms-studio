@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Enrollment, GPA } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge, EmptyState, List, ListItem, LoadingState, PageHeader, Section, StatGrid, type BadgeTone } from '@/components/ui/page';
+import { ChevronRight, GraduationCap } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function GradesPage() {
@@ -33,69 +34,62 @@ export default function GradesPage() {
     }
   };
 
-  const getGradeColor = (grade?: string) => {
-    if (!grade) return 'text-muted-foreground';
-    if (grade === 'A') return 'text-green-400';
-    if (grade === 'B') return 'text-blue-400';
-    if (grade === 'C') return 'text-yellow-400';
-    if (grade === 'D') return 'text-orange-400';
-    if (grade === 'F') return 'text-red-400';
-    return 'text-muted-foreground';
+  const gradeTone = (grade?: string): BadgeTone => {
+    if (!grade) return 'neutral';
+    if (grade === 'A') return 'success';
+    if (grade === 'B') return 'primary';
+    if (grade === 'C' || grade === 'D') return 'warning';
+    if (grade === 'F') return 'danger';
+    return 'neutral';
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Grades & GPA</h1>
+    <div className="space-y-10">
+      <PageHeader
+        title="Grades and GPA"
+        description="Your overall standing and per-course results."
+        className="mb-0 md:mb-0"
+      />
 
       {gpa && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardDescription>Overall GPA</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white">{gpa.gpa.toFixed(2)}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Based on {gpa.coursesCount} course{gpa.coursesCount !== 1 ? 's' : ''} ({gpa.totalCredits} credits)
-            </p>
-          </CardContent>
-        </Card>
+        <StatGrid
+          items={[
+            { label: 'Overall GPA', value: gpa.gpa.toFixed(2) },
+            { label: 'Courses', value: gpa.coursesCount },
+            { label: 'Credits', value: gpa.totalCredits },
+          ]}
+        />
       )}
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Course Grades</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Click on a course to view detailed evaluations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+      <Section title="Course grades" description="Select a course to view detailed evaluations.">
+        {enrollments.length === 0 ? (
+          <EmptyState icon={GraduationCap} title="No courses yet" description="Grades appear once you enroll in courses." />
+        ) : (
+          <List>
             {enrollments.map((enrollment) => (
-              <div
+              <ListItem
                 key={enrollment.enrollment_id}
                 onClick={() => router.push(`/grades/${enrollment.course_id}`)}
-                className="flex items-center justify-between rounded-lg border border-white/10 p-4 cursor-pointer hover:bg-white/10 transition-colors"
               >
-                <div>
-                  <p className="font-medium text-white">{enrollment.code} - {enrollment.title}</p>
-                  <p className="text-sm text-muted-foreground">Term: {enrollment.term}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-2xl font-bold ${getGradeColor((enrollment as any).grade)}`}>
-                    {(enrollment as any).grade || 'N/A'}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">
+                    {enrollment.code} · {enrollment.title}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">View Details →</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Term {enrollment.term}</p>
                 </div>
-              </div>
+                <Badge tone={gradeTone((enrollment as any).grade)} className="tabular-nums">
+                  {(enrollment as any).grade || 'N/A'}
+                </Badge>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+              </ListItem>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </List>
+        )}
+      </Section>
     </div>
   );
 }
-

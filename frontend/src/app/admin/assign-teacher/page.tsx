@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { UserCheck } from 'lucide-react';
 import api from '@/lib/api';
 import type { Course } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Avatar, EmptyState, Field, List, ListItem, LoadingState, PageHeader, Section, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 type EligibleTeacher = {
@@ -79,123 +80,115 @@ export default function AssignTeacherPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Assign Teacher to Course</h1>
-        <p className="mt-2 text-muted-foreground">
-          View eligible teachers (those with matching skills) and assign them to courses. You can also force-assign teachers who don't meet all requirements.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Assign teacher"
+        description="See which teachers have the skills a course requires and assign them. You can also force-assign a teacher who doesn't meet every requirement."
+      />
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Select Course</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <select
-            value={selectedCourse || ''}
-            onChange={(e) => setSelectedCourse(Number(e.target.value))}
-            className="w-full rounded border border-white/20 bg-white/5 px-4 py-2 text-white"
-          >
-            <option value="">Select a course</option>
-            {courses.map((course) => (
-              <option key={course.course_id} value={course.course_id}>
-                {course.code} - {course.title}
-              </option>
-            ))}
-          </select>
-        </CardContent>
-      </Card>
+      <Field label="Course" htmlFor="course" className="max-w-md">
+        <Select
+          id="course"
+          value={selectedCourse || ''}
+          onChange={(e) => setSelectedCourse(Number(e.target.value))}
+        >
+          <option value="">Select a course</option>
+          {courses.map((course) => (
+            <option key={course.course_id} value={course.course_id}>
+              {course.code} - {course.title}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
       {selectedCourse && (
-        <>
-          <Card className="border-white/10 bg-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">
-                Eligible Teachers ({eligibleTeachers.length})
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                These teachers have all the required skills for this course.
-              </p>
-            </CardHeader>
-            <CardContent>
-              {eligibleTeachers.length === 0 ? (
-                <p className="text-muted-foreground">
-                  No eligible teachers found. Make sure the course has required skills assigned, and teachers have added those skills to their profile.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {eligibleTeachers.map((teacher) => (
-                    <div
-                      key={teacher.teacher_id}
-                      className="flex items-center justify-between rounded-lg border border-white/10 p-3"
-                    >
-                      <div>
-                        <p className="font-medium text-white">{teacher.full_name}</p>
-                        <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                        {teacher.department && (
-                          <p className="text-sm text-muted-foreground">Department: {teacher.department}</p>
-                        )}
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <Section
+            className="lg:col-span-3"
+            title="Eligible teachers"
+            description={`${eligibleTeachers.length} with all required skills for this course`}
+          >
+            {eligibleTeachers.length === 0 ? (
+              <EmptyState
+                icon={UserCheck}
+                title="No eligible teachers"
+                description="Make sure the course has required skills assigned, and teachers have added those skills to their profile."
+              />
+            ) : (
+              <List>
+                {eligibleTeachers.map((teacher) => {
+                  const isSelected = form.teacherId === teacher.teacher_id.toString();
+                  return (
+                    <ListItem key={teacher.teacher_id} active={isSelected}>
+                      <Avatar name={teacher.full_name} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">{teacher.full_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {teacher.email}
+                          {teacher.department && ` · ${teacher.department}`}
+                        </p>
                       </div>
                       <Button
                         size="sm"
+                        variant={isSelected ? 'default' : 'outline'}
                         onClick={() => setForm({ ...form, teacherId: teacher.teacher_id.toString() })}
                       >
-                        Select
+                        {isSelected ? 'Selected' : 'Select'}
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+          </Section>
 
-          <Card className="border-white/10 bg-white/5">
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-white">Assign Teacher</CardTitle>
+              <CardTitle className="text-[17px]">Assignment</CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAssign} className="space-y-4">
-                <div>
-                  <Label htmlFor="teacherId">Teacher ID</Label>
+            <CardContent className="pt-0">
+              <form onSubmit={handleAssign} className="space-y-5">
+                <Field label="Teacher ID" htmlFor="teacherId" hint="Select a teacher from the list or enter an ID.">
                   <Input
                     id="teacherId"
                     value={form.teacherId}
                     onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-                    placeholder="Select a teacher above or enter ID"
+                    placeholder="Teacher ID"
                     required
                   />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                  <Field label="Term" htmlFor="term">
+                    <Input
+                      id="term"
+                      value={form.term}
+                      onChange={(e) => setForm({ ...form, term: e.target.value })}
+                      placeholder="e.g. 2025-SPRING"
+                      required
+                    />
+                  </Field>
+                  <Field label="Section" htmlFor="section">
+                    <Input
+                      id="section"
+                      value={form.section}
+                      onChange={(e) => setForm({ ...form, section: e.target.value })}
+                      placeholder="01"
+                    />
+                  </Field>
                 </div>
-                <div>
-                  <Label htmlFor="term">Term</Label>
-                  <Input
-                    id="term"
-                    value={form.term}
-                    onChange={(e) => setForm({ ...form, term: e.target.value })}
-                    placeholder="e.g., 2025-SPRING"
-                    required
-                  />
+                <div className="flex justify-end pt-1">
+                  <Button type="submit">Assign teacher</Button>
                 </div>
-                <div>
-                  <Label htmlFor="section">Section</Label>
-                  <Input
-                    id="section"
-                    value={form.section}
-                    onChange={(e) => setForm({ ...form, section: e.target.value })}
-                    placeholder="01"
-                  />
-                </div>
-                <Button type="submit">Assign Teacher</Button>
               </form>
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
     </div>
   );
 }
-

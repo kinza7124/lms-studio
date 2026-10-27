@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Calendar, FileCheck, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import type { Assessment, Course } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge, EmptyState, Field, List, ListItem, LoadingState, PageHeader, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AssessmentsPage() {
@@ -109,32 +110,39 @@ export default function AssessmentsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Assessments</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'Create Assessment'}
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Assessments"
+        description="Midterms, finals, projects and presentations across all courses."
+        actions={
+          <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : (
+              <>
+                <Plus className="h-4 w-4" />
+                Create assessment
+              </>
+            )}
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="max-w-3xl">
           <CardHeader>
-            <CardTitle className="text-white">Create New Assessment</CardTitle>
+            <CardTitle className="text-[17px]">New assessment</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="courseId">Course</Label>
-                <select
+          <CardContent className="pt-0">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Field label="Course" htmlFor="courseId">
+                <Select
                   id="courseId"
                   value={formData.courseId}
                   onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-white"
                   required
                 >
                   <option value="">Select a course</option>
@@ -143,45 +151,40 @@ export default function AssessmentsPage() {
                       {course.code} - {course.title}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="title">Title</Label>
+                </Select>
+              </Field>
+              <Field label="Title" htmlFor="title">
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
                 />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
+              </Field>
+              <Field label="Description" htmlFor="description">
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                <div>
-                  <Label htmlFor="assessmentType">Assessment Type</Label>
-                  <select
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Type" htmlFor="assessmentType">
+                  <Select
                     id="assessmentType"
                     value={formData.assessmentType}
                     onChange={(e) => setFormData({ ...formData, assessmentType: e.target.value })}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-white"
                     required
                   >
                     <option value="midterm">Midterm</option>
-                    <option value="final">Final Exam</option>
+                    <option value="final">Final exam</option>
                     <option value="project">Project</option>
                     <option value="presentation">Presentation</option>
                     <option value="other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="weightPercentage">Weight Percentage (%)</Label>
+                  </Select>
+                </Field>
+                <Field label="Weight (%)" htmlFor="weightPercentage">
                   <Input
                     id="weightPercentage"
                     type="number"
@@ -190,11 +193,8 @@ export default function AssessmentsPage() {
                     onChange={(e) => setFormData({ ...formData, weightPercentage: e.target.value })}
                     required
                   />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                <div>
-                  <Label htmlFor="totalMarks">Total Marks</Label>
+                </Field>
+                <Field label="Total marks" htmlFor="totalMarks">
                   <Input
                     id="totalMarks"
                     type="number"
@@ -202,93 +202,95 @@ export default function AssessmentsPage() {
                     onChange={(e) => setFormData({ ...formData, totalMarks: e.target.value })}
                     required
                   />
-                </div>
-                <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
+                </Field>
+                <Field label="Due date" htmlFor="dueDate">
                   <Input
                     id="dueDate"
                     type="datetime-local"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   />
-                </div>
+                </Field>
               </div>
-              <Button type="submit">Create Assessment</Button>
+              <div className="flex justify-end pt-1">
+                <Button type="submit">Create assessment</Button>
+              </div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <div>
-        <Label htmlFor="filterCourse">Filter by Course</Label>
-        <select
+      <Field label="Filter by course" htmlFor="filterCourse" className="max-w-xs">
+        <Select
           id="filterCourse"
           onChange={(e) => handleCourseChange(e.target.value)}
-          className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm text-white mt-2"
         >
-          <option value="">All Courses</option>
+          <option value="">All courses</option>
           {courses.map((course) => (
             <option key={course.course_id} value={course.course_id}>
               {course.code} - {course.title}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
       {assessments.length === 0 ? (
-        <Card className="border-white/10 bg-white/5">
-          <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-            {selectedCourse ? 'No assessments found for this course.' : 'Select a course to view assessments or create a new one.'}
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={FileCheck}
+          title={selectedCourse ? 'No assessments for this course' : 'Select a course'}
+          description={selectedCourse ? 'Create an assessment to get started.' : 'Choose a course to view its assessments, or create a new one.'}
+        />
       ) : (
-        <div className="grid gap-2 md:gap-3 lg:gap-4">
+        <List>
           {assessments.map((assessment) => (
-            <Card key={assessment.assessment_id} className="border-white/10 bg-white/5">
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <CardTitle className="text-white">{assessment.title}</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}`)}
-                  >
-                    Manage
-                  </Button>
+            <ListItem key={assessment.assessment_id} className="flex-col items-stretch gap-3 md:flex-row md:items-center">
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="truncate text-[15px] font-medium text-foreground">{assessment.title}</p>
+                  <Badge className="capitalize">{assessment.assessment_type}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-2">{assessment.description}</p>
-                <div className="flex gap-2 md:gap-3 lg:gap-4 text-sm text-muted-foreground">
-                  <span>Type: {assessment.assessment_type}</span>
-                  <span>Marks: {assessment.total_marks}</span>
-                  <span>Weight: {assessment.weight_percentage}%</span>
+                {assessment.description && (
+                  <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{assessment.description}</p>
+                )}
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="tabular-nums">{assessment.total_marks} marks</span>
+                  <span className="tabular-nums">{assessment.weight_percentage}% weight</span>
                   {assessment.due_date && (
-                    <span>Due: {new Date(assessment.due_date).toLocaleDateString()}</span>
+                    <span className="inline-flex items-center gap-1 tabular-nums">
+                      <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Due {new Date(assessment.due_date).toLocaleDateString()}
+                    </span>
                   )}
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}`)}
-                  >
-                    View Submissions
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(assessment.assessment_id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}`)}
+                >
+                  Manage
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/admin/assessments/${assessment.assessment_id}`)}
+                >
+                  Submissions
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-red-50"
+                  onClick={() => handleDelete(assessment.assessment_id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </ListItem>
           ))}
-        </div>
+        </List>
       )}
     </div>
   );
 }
-

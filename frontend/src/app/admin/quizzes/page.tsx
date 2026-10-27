@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Calendar, ClipboardList, Clock, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import type { Quiz, Course } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { EmptyState, Field, List, ListItem, LoadingState, PageHeader, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function QuizzesPage() {
@@ -107,32 +108,39 @@ export default function QuizzesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Quizzes</h1>
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'Create Quiz'}
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Quizzes"
+        description="Create quizzes for any course, manage questions and review submissions."
+        actions={
+          <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : (
+              <>
+                <Plus className="h-4 w-4" />
+                Create quiz
+              </>
+            )}
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="max-w-3xl">
           <CardHeader>
-            <CardTitle className="text-white">Create New Quiz</CardTitle>
+            <CardTitle className="text-[17px]">New quiz</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="courseId">Course</Label>
-                <select
+          <CardContent className="pt-0">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Field label="Course" htmlFor="courseId">
+                <Select
                   id="courseId"
                   value={formData.courseId}
                   onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-white"
                   required
                 >
                   <option value="">Select a course</option>
@@ -141,29 +149,26 @@ export default function QuizzesPage() {
                       {course.code} - {course.title}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="title">Title</Label>
+                </Select>
+              </Field>
+              <Field label="Title" htmlFor="title">
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
                 />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
+              </Field>
+              <Field label="Description" htmlFor="description">
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
-                <div>
-                  <Label htmlFor="totalMarks">Total Marks</Label>
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-3">
+                <Field label="Total marks" htmlFor="totalMarks">
                   <Input
                     id="totalMarks"
                     type="number"
@@ -171,108 +176,112 @@ export default function QuizzesPage() {
                     onChange={(e) => setFormData({ ...formData, totalMarks: e.target.value })}
                     required
                   />
-                </div>
-                <div>
-                  <Label htmlFor="timeLimit">Time Limit (minutes, optional)</Label>
+                </Field>
+                <Field label="Time limit" htmlFor="timeLimit" hint="Minutes, optional">
                   <Input
                     id="timeLimit"
                     type="number"
                     value={formData.timeLimit}
                     onChange={(e) => setFormData({ ...formData, timeLimit: e.target.value })}
                   />
-                </div>
+                </Field>
+                <Field label="Due date" htmlFor="dueDate">
+                  <Input
+                    id="dueDate"
+                    type="datetime-local"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  />
+                </Field>
               </div>
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="datetime-local"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                />
+              <div className="flex justify-end pt-1">
+                <Button type="submit">Create quiz</Button>
               </div>
-              <Button type="submit">Create Quiz</Button>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <div>
-        <Label htmlFor="filterCourse">Filter by Course</Label>
-        <select
+      <Field label="Filter by course" htmlFor="filterCourse" className="max-w-xs">
+        <Select
           id="filterCourse"
           onChange={(e) => handleCourseChange(e.target.value)}
-          className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm text-white mt-2"
         >
-          <option value="">All Courses</option>
+          <option value="">All courses</option>
           {courses.map((course) => (
             <option key={course.course_id} value={course.course_id}>
               {course.code} - {course.title}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
       {quizzes.length === 0 ? (
-        <Card className="border-white/10 bg-white/5">
-          <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-            {selectedCourse ? 'No quizzes found for this course.' : 'Select a course to view quizzes or create a new one.'}
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={ClipboardList}
+          title={selectedCourse ? 'No quizzes for this course' : 'Select a course'}
+          description={selectedCourse ? 'Create a quiz to get started.' : 'Choose a course to view its quizzes, or create a new one.'}
+        />
       ) : (
-        <div className="grid gap-2 md:gap-3 lg:gap-4">
+        <List>
           {quizzes.map((quiz) => (
-            <Card key={quiz.quiz_id} className="border-white/10 bg-white/5">
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <CardTitle className="text-white">{quiz.title}</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}`)}
-                  >
-                    Manage
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-2">{quiz.description}</p>
-                <div className="flex gap-2 md:gap-3 lg:gap-4 text-sm text-muted-foreground">
-                  <span>Marks: {quiz.total_marks}</span>
-                  {quiz.time_limit && <span>Time: {quiz.time_limit} min</span>}
+            <ListItem key={quiz.quiz_id} className="flex-col items-stretch gap-3 md:flex-row md:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium text-foreground">{quiz.title}</p>
+                {quiz.description && (
+                  <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{quiz.description}</p>
+                )}
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="tabular-nums">{quiz.total_marks} marks</span>
+                  {quiz.time_limit && (
+                    <span className="inline-flex items-center gap-1 tabular-nums">
+                      <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      {quiz.time_limit} min
+                    </span>
+                  )}
                   {quiz.due_date && (
-                    <span>Due: {new Date(quiz.due_date).toLocaleDateString()}</span>
+                    <span className="inline-flex items-center gap-1 tabular-nums">
+                      <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Due {new Date(quiz.due_date).toLocaleDateString()}
+                    </span>
                   )}
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/questions`)}
-                  >
-                    Add Questions
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/submissions`)}
-                  >
-                    View Submissions
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(quiz.quiz_id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}`)}
+                >
+                  Manage
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/questions`)}
+                >
+                  Questions
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/admin/quizzes/${quiz.quiz_id}/submissions`)}
+                >
+                  Submissions
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-red-50"
+                  onClick={() => handleDelete(quiz.quiz_id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </ListItem>
           ))}
-        </div>
+        </List>
       )}
     </div>
   );
 }
-

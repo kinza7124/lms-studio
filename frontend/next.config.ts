@@ -19,18 +19,12 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
   
-  // Enable SWC minification for better performance
-  swcMinify: true,
   
   // Disable type checking during build (run separately in CI)
   typescript: {
     ignoreBuildErrors: false,
   },
   
-  // Disable ESLint during build (run separately in CI)
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
 };
 
 export default nextConfig;

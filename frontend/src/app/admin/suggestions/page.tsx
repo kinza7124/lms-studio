@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Lightbulb, MousePointerClick } from 'lucide-react';
 import api from '@/lib/api';
 import type { Suggestion } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge, EmptyState, Field, List, ListItem, LoadingState, PageHeader, Tabs, statusTone } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AdminSuggestionsPage() {
@@ -57,102 +59,117 @@ export default function AdminSuggestionsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Suggestions</h1>
-        <div className="flex gap-2">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-            <Button
-              key={status}
-              variant={filter === status ? 'default' : 'outline'}
-              onClick={() => setFilter(status)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
-        </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Suggestions"
+        description="Course improvement suggestions submitted by teachers."
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs
+          items={[
+            { value: 'all', label: 'All' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'approved', label: 'Approved' },
+            { value: 'rejected', label: 'Rejected' },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
+        <p className="text-sm tabular-nums text-muted-foreground">{suggestions.length} suggestions</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Suggestions ({suggestions.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {suggestions.map((suggestion) => (
-                <div
-                  key={suggestion.suggestion_id}
-                  className={`cursor-pointer rounded-lg border p-4 ${
-                    selectedSuggestion?.suggestion_id === suggestion.suggestion_id
-                      ? 'border-purple-500 bg-purple-500/10'
-                      : 'border-white/10'
-                  }`}
-                  onClick={() => setSelectedSuggestion(suggestion)}
-                >
-                  <p className="font-medium text-white">
-                    {suggestion.code} - {suggestion.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    By: {suggestion.teacher_name} | Status: {suggestion.status}
-                  </p>
-                  <p className="mt-2 text-sm text-white">{suggestion.suggestion_text.substring(0, 100)}...</p>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        {suggestions.length === 0 ? (
+          <EmptyState icon={Lightbulb} title="No suggestions" description="Nothing matches this filter." />
+        ) : (
+          <List>
+            {suggestions.map((suggestion) => (
+              <ListItem
+                key={suggestion.suggestion_id}
+                active={selectedSuggestion?.suggestion_id === suggestion.suggestion_id}
+                onClick={() => setSelectedSuggestion(suggestion)}
+                className="items-start"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 truncate text-[15px] font-medium text-foreground">
+                      {suggestion.code} - {suggestion.title}
+                    </p>
+                    <Badge tone={statusTone(suggestion.status)} className="capitalize">{suggestion.status}</Badge>
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">{suggestion.teacher_name}</p>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{suggestion.suggestion_text.substring(0, 100)}...</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </ListItem>
+            ))}
+          </List>
+        )}
 
-        {selectedSuggestion && (
-          <Card className="border-white/10 bg-white/5">
+        {selectedSuggestion ? (
+          <Card className="lg:sticky lg:top-4">
             <CardHeader>
-              <CardTitle className="text-white">Suggestion Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="font-medium text-white">
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle className="min-w-0 text-[17px]">
                   {selectedSuggestion.code} - {selectedSuggestion.title}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  By: {selectedSuggestion.teacher_name} ({selectedSuggestion.teacher_email})
-                </p>
-                <p className="mt-2 text-white">{selectedSuggestion.suggestion_text}</p>
+                </CardTitle>
+                <Badge tone={statusTone(selectedSuggestion.status)} className="capitalize">{selectedSuggestion.status}</Badge>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {selectedSuggestion.teacher_name} · {selectedSuggestion.teacher_email}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-0">
+              <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{selectedSuggestion.suggestion_text}</p>
               {selectedSuggestion.admin_response && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Admin Response:</p>
-                  <p className="text-white">{selectedSuggestion.admin_response}</p>
+                <div className="rounded-xl bg-secondary/60 p-4">
+                  <p className="text-xs text-muted-foreground">Admin response</p>
+                  <p className="mt-1 text-sm text-foreground">{selectedSuggestion.admin_response}</p>
                 </div>
               )}
               {selectedSuggestion.status === 'pending' && (
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Admin response (optional)"
-                    value={adminResponse}
-                    onChange={(e) => setAdminResponse(e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleApprove(selectedSuggestion.suggestion_id)}>
-                      Approve
-                    </Button>
+                <div className="space-y-4">
+                  <Field label="Response" htmlFor="adminResponse" hint="Optional, shared with the teacher.">
+                    <Textarea
+                      id="adminResponse"
+                      placeholder="Write a response"
+                      value={adminResponse}
+                      onChange={(e) => setAdminResponse(e.target.value)}
+                    />
+                  </Field>
+                  <div className="flex justify-end gap-2">
                     <Button
-                      variant="destructive"
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:bg-red-50"
                       onClick={() => handleReject(selectedSuggestion.suggestion_id)}
                     >
                       Reject
+                    </Button>
+                    <Button size="sm" onClick={() => handleApprove(selectedSuggestion.suggestion_id)}>
+                      Approve
                     </Button>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
+        ) : (
+          suggestions.length > 0 && (
+            <EmptyState
+              icon={MousePointerClick}
+              title="Select a suggestion"
+              description="Choose a suggestion to read it and respond."
+              className="hidden lg:flex"
+            />
+          )
         )}
       </div>
     </div>
   );
 }
-

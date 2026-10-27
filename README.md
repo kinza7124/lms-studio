@@ -1,3 +1,12 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.svg">
+    <img src="docs/brand/logo-light.svg" alt="LMS Studio" width="248">
+  </picture>
+</p>
+
+<p align="center">Courses, lectures, assignments and grades in one focused workspace.</p>
+
 # LMS Studio - Learning Management System
 
 ## 📋 Table of Contents
@@ -51,7 +60,8 @@
 ### Frontend
 - **Next.js** (v16.0.4) - React framework
 - **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
+- **Tailwind CSS** - Styling (light, minimal design system with shared UI primitives in `src/components/ui`)
+- **lucide-react** - Icons
 - **Axios** - HTTP client
 - **React Hooks** - State management
 

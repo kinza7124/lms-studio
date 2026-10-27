@@ -1,13 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { BookOpen, ArrowRight } from 'lucide-react';
 import type { Course } from '@/types';
 
 type CourseCardProps = {
@@ -16,55 +8,51 @@ type CourseCardProps = {
   ctaLabel?: string;
 };
 
-export function CourseCard({ course, onView, ctaLabel = 'View Course' }: CourseCardProps) {
+// Soft, deterministic tints for courses without a thumbnail
+const TINTS = [
+  { bg: 'bg-[#eaf3ff]', fg: 'text-[#0060d1]' },
+  { bg: 'bg-[#eaf7ee]', fg: 'text-[#1e7a3c]' },
+  { bg: 'bg-[#fff3e6]', fg: 'text-[#b25b00]' },
+  { bg: 'bg-[#f2effc]', fg: 'text-[#5b47b8]' },
+  { bg: 'bg-[#eef1f4]', fg: 'text-[#3c4a5a]' },
+];
+
+export function CourseCard({ course, onView, ctaLabel = 'View course' }: CourseCardProps) {
+  const tint = TINTS[course.course_id % TINTS.length];
   const badgeLabel = course.code ? course.code.toUpperCase() : `Course #${course.course_id}`;
   return (
-    <Card className="group relative flex flex-col overflow-hidden border-white/10 bg-white/5 shadow-lg shadow-black/20 transition-all duration-300 hover:border-purple-500/30 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1">
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 via-indigo-500/0 to-cyan-500/0 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
-      
-      {/* Animated border glow */}
-      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500/0 via-indigo-500/0 to-cyan-500/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-20" />
-      
-      <CardHeader className="relative z-10 space-y-3">
-        <div className="inline-flex w-fit items-center rounded-full border border-purple-400/30 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 px-3 py-1 text-xs uppercase tracking-widest text-purple-200/90 backdrop-blur-sm transition-all duration-300 group-hover:border-purple-400/50 group-hover:from-purple-500/30 group-hover:to-indigo-500/30">
-          {badgeLabel}
-        </div>
-        <CardTitle className="text-xl text-white transition-colors duration-300 group-hover:text-purple-200">
-          {course.title}
-        </CardTitle>
-        <CardDescription className="text-sm text-white/70">
-          {course.description ? `${course.description.slice(0, 120)}${course.description.length > 120 ? '…' : ''}` : 'No description yet'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="relative z-10 flex-1">
+    <button
+      type="button"
+      onClick={() => onView?.(course.course_id)}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+    >
+      <div className="relative aspect-[2/1] w-full overflow-hidden bg-secondary">
         {course.thumbnail_url ? (
-          <div className="relative overflow-hidden rounded-2xl border border-white/10">
-            <img
-              src={course.thumbnail_url}
-              alt={course.title}
-              className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          </div>
+          <img
+            src={course.thumbnail_url}
+            alt={course.title}
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          />
         ) : (
-          <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/15 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 text-sm text-white/50 backdrop-blur-sm transition-all duration-300 group-hover:border-purple-400/30 group-hover:from-purple-500/20 group-hover:to-indigo-500/20">
-            <div className="text-center">
-              <div className="mb-2 text-2xl">📚</div>
-              <div>No thumbnail</div>
-            </div>
+          <div className={`flex h-full w-full flex-col justify-between p-5 ${tint.bg}`}>
+            <BookOpen className={`h-5 w-5 ${tint.fg}`} strokeWidth={1.75} />
+            <span className={`text-2xl font-semibold tracking-tight ${tint.fg}`}>{course.code || course.title.slice(0, 3)}</span>
           </div>
         )}
-      </CardContent>
-      <CardFooter className="relative z-10">
-        <Button
-          className="w-full bg-gradient-to-r from-purple-500 via-indigo-500 to-cyan-500 bg-size-200 text-white shadow-lg shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/50"
-          onClick={() => onView?.(course.course_id)}
-        >
-          <span className="relative z-10">{ctaLabel}</span>
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        {course.thumbnail_url && <span className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground">{badgeLabel}</span>}
+        <h3 className="text-[17px] font-semibold leading-snug tracking-tight text-foreground">
+          {course.title}
+        </h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+          {course.description || 'No description yet'}
+        </p>
+        <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary">
+          {ctaLabel}
+          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </button>
   );
 }
-

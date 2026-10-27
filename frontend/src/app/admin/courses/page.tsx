@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BookOpen, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import type { Course, Specialty } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge, EmptyState, Field, LoadingState, PageHeader } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AdminCoursesPage() {
@@ -117,51 +118,54 @@ export default function AdminCoursesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Course Management</h1>
-        <Button onClick={() => {
-          setShowForm(true);
-          setSelectedCourse(null);
-          setForm({
-            code: '',
-            title: '',
-            description: '',
-            thumbnailUrl: '',
-            credits: '3',
-            content: '',
-            selectedSpecialties: [],
-          });
-        }}>
-          Add Course
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Courses"
+        description="Create and edit courses, set credits, and define the skills required to teach them."
+        actions={
+          <Button onClick={() => {
+            setShowForm(true);
+            setSelectedCourse(null);
+            setForm({
+              code: '',
+              title: '',
+              description: '',
+              thumbnailUrl: '',
+              credits: '3',
+              content: '',
+              selectedSpecialties: [],
+            });
+          }}>
+            <Plus className="h-4 w-4" />
+            Add course
+          </Button>
+        }
+      />
 
       {showForm && (
-        <Card className="border-white/10 bg-white/5">
+        <Card className="max-w-3xl">
           <CardHeader>
-            <CardTitle className="text-white">
-              {selectedCourse ? 'Edit Course' : 'Create Course'}
+            <CardTitle className="text-[17px]">
+              {selectedCourse ? 'Edit course' : 'Create course'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="code">Course Code</Label>
+          <CardContent className="pt-0">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Course code" htmlFor="code">
                   <Input
                     id="code"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value })}
                     required
                   />
-                </div>
-                <div>
-                  <Label htmlFor="credits">Credits</Label>
+                </Field>
+                <Field label="Credits" htmlFor="credits">
                   <Input
                     id="credits"
                     type="number"
@@ -169,54 +173,49 @@ export default function AdminCoursesPage() {
                     onChange={(e) => setForm({ ...form, credits: e.target.value })}
                     required
                   />
-                </div>
+                </Field>
               </div>
-              <div>
-                <Label htmlFor="title">Title</Label>
+              <Field label="Title" htmlFor="title">
                 <Input
                   id="title"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   required
                 />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
+              </Field>
+              <Field label="Description" htmlFor="description">
                 <Textarea
                   id="description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                 />
-              </div>
-              <div>
-                <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+              </Field>
+              <Field label="Thumbnail URL" htmlFor="thumbnailUrl">
                 <Input
                   id="thumbnailUrl"
                   value={form.thumbnailUrl}
                   onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
                 />
-              </div>
-              <div>
-                <Label htmlFor="content">Content/Syllabus</Label>
+              </Field>
+              <Field label="Content / syllabus" htmlFor="content">
                 <Textarea
                   id="content"
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                 />
-              </div>
-              <div>
-                <Label htmlFor="specialties">Required Skills/Specialties (Tags)</Label>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Select the skills required to teach this course. Teachers must have all selected skills to be eligible.
-                </p>
-                <div className="max-h-48 overflow-y-auto border border-white/10 rounded-lg p-3 space-y-2">
+              </Field>
+              <Field
+                label="Required skills"
+                hint="Teachers must have all selected skills to be eligible to teach this course."
+              >
+                <div className="max-h-56 overflow-y-auto rounded-xl bg-secondary/60 p-2">
                   {specialties.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No specialties available. Create some first.</p>
+                    <p className="p-2 text-sm text-muted-foreground">No specialties available. Create some first.</p>
                   ) : (
                     specialties.map((specialty) => (
                       <label
                         key={specialty.specialty_id}
-                        className="flex items-center space-x-2 cursor-pointer hover:bg-white/5 p-2 rounded"
+                        className="flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-card"
                       >
                         <input
                           type="checkbox"
@@ -236,12 +235,12 @@ export default function AdminCoursesPage() {
                               });
                             }
                           }}
-                          className="rounded border-white/20"
+                          className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
                         />
-                        <span className="text-sm text-white">
+                        <span className="min-w-0 text-sm text-foreground">
                           {specialty.specialty_name}
                           {specialty.description && (
-                            <span className="text-muted-foreground ml-2">- {specialty.description}</span>
+                            <span className="block text-xs text-muted-foreground">{specialty.description}</span>
                           )}
                         </span>
                       </label>
@@ -249,80 +248,83 @@ export default function AdminCoursesPage() {
                   )}
                 </div>
                 {form.selectedSpecialties.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 pt-1">
                     {form.selectedSpecialties.map((specialtyId) => {
                       const specialty = specialties.find((s) => s.specialty_id === specialtyId);
                       return specialty ? (
-                        <span
-                          key={specialtyId}
-                          className="px-2 py-1 bg-purple-500/20 text-purple-200 rounded-full text-xs border border-purple-400/30"
-                        >
+                        <Badge key={specialtyId} tone="primary">
                           {specialty.specialty_name}
-                        </span>
+                        </Badge>
                       ) : null;
                     })}
                   </div>
                 )}
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">{selectedCourse ? 'Update' : 'Create'}</Button>
+              </Field>
+              <div className="flex justify-end gap-2 pt-1">
                 <Button type="button" variant="outline" onClick={() => {
                   setShowForm(false);
                   setSelectedCourse(null);
                 }}>
                   Cancel
                 </Button>
+                <Button type="submit">{selectedCourse ? 'Save changes' : 'Create course'}</Button>
               </div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Courses ({courses.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {courses.map((course) => (
-              <div
-                key={course.course_id}
-                className="flex items-center justify-between rounded-lg border border-white/10 p-4"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-white">
-                    {course.code} - {course.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{course.description}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {course.credits} credits
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(course)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleManageRequirements(course.course_id)}
-                  >
-                    Requirements
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(course.course_id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {courses.length === 0 ? (
+        <EmptyState icon={BookOpen} title="No courses yet" description="Add your first course to get started." />
+      ) : (
+        <Card className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th className="hidden md:table-cell">Credits</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map((course) => (
+                <tr key={course.course_id}>
+                  <td className="max-w-md">
+                    <p className="text-xs text-muted-foreground">{course.code}</p>
+                    <p className="font-medium text-foreground">{course.title}</p>
+                    {course.description && (
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{course.description}</p>
+                    )}
+                  </td>
+                  <td className="hidden tabular-nums text-muted-foreground md:table-cell">{course.credits}</td>
+                  <td>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(course)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleManageRequirements(course.course_id)}
+                      >
+                        Requirements
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:bg-red-50"
+                        onClick={() => handleDelete(course.course_id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
-

@@ -5,10 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Assignment, Submission } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, Badge, Field, List, ListItem, LoadingState, PageHeader } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { Upload, FileText, CheckCircle, XCircle } from 'lucide-react';
 
@@ -124,12 +124,14 @@ export default function StudentAssignmentPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   if (!assignment) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 text-red-400">Assignment not found or you don't have access to it.</div>
+      <div className="mx-auto max-w-3xl">
+        <Alert tone="error">Assignment not found or you don&apos;t have access to it.</Alert>
+      </div>
     );
   }
 
@@ -137,236 +139,185 @@ export default function StudentAssignmentPage() {
   const hasSubmission = submission !== null;
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6 max-w-4xl mx-auto p-6">
-      {/* Header with Course Info */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="text-muted-foreground hover:text-white"
-            >
-              ← Back to Course
-            </Button>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">Assignment</span>
-          </div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">{assignment.title}</h1>
-          {assignment.description && (
-            <p className="mt-2 text-muted-foreground">{assignment.description}</p>
-          )}
-        </div>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <PageHeader
+        back="Back to course"
+        eyebrow="Assignment"
+        title={assignment.title}
+        description={assignment.description}
+        actions={
+          hasSubmission ? (
+            <Badge tone="success">
+              <CheckCircle className="h-3.5 w-3.5" />
+              Turned in
+            </Badge>
+          ) : isPastDue ? (
+            <Badge tone="danger">Past due</Badge>
+          ) : undefined
+        }
+        className="mb-0 md:mb-0"
+      />
 
-      {/* Assignment Details - Google Classroom Style */}
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-white text-xl">Instructions</CardTitle>
-            {hasSubmission && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30">
-                <CheckCircle className="h-4 w-4 text-green-400" />
-                <span className="text-sm text-green-400 font-medium">Turned in</span>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Assignment Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 lg:gap-4 pb-4 border-b border-white/10">
-            {assignment.due_date && (
-              <div>
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Due</Label>
-                <p className={`mt-1 text-sm font-medium ${isPastDue ? 'text-red-400' : 'text-white'}`}>
-                  {new Date(assignment.due_date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {isPastDue && !hasSubmission && (
-                    <span className="ml-2 text-xs text-red-400">(Past due)</span>
-                  )}
-                </p>
-              </div>
-            )}
-            {assignment.total_marks && (
-              <div>
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Points</Label>
-                <p className="mt-1 text-sm font-medium text-white">{assignment.total_marks}</p>
-              </div>
-            )}
-            {hasSubmission && submission?.submitted_at && (
-              <div>
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Submitted</Label>
-                <p className="mt-1 text-sm font-medium text-green-400">
-                  {new Date(submission.submitted_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            )}
-          </div>
+      <Card>
+        <CardContent className="space-y-6 p-6">
+          <h2 className="text-[17px] font-semibold tracking-tight text-foreground">Instructions</h2>
 
-          {/* Assignment PDF */}
-          {assignment.pdf_url && (
-            <div className="pt-2">
-              <a
-                href={buildAssetUrl(assignment.pdf_url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
-              >
-                <FileText className="h-5 w-5" />
-                <span className="font-medium">View Assignment PDF</span>
-              </a>
-            </div>
-          )}
-
-          {/* Grade Display */}
-          {hasSubmission && submission?.grade && (
-            <div className="pt-4 border-t border-white/10">
-              <div className="flex items-start justify-between">
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Your Grade</Label>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-white">
-                      {submission.grade}
-                    </p>
-                    {submission.marks_obtained !== undefined && submission.marks_obtained !== null && (
-                      <p className="text-lg text-muted-foreground">
-                        {submission.marks_obtained}/{assignment.total_marks || 100}
-                      </p>
+          {(assignment.due_date || assignment.total_marks || (hasSubmission && submission?.submitted_at)) && (
+            <dl className="grid gap-4 sm:grid-cols-3">
+              {assignment.due_date && (
+                <div className="rounded-xl bg-secondary/60 p-4">
+                  <dt className="text-xs text-muted-foreground">Due</dt>
+                  <dd className={`mt-1 text-sm font-medium tabular-nums ${isPastDue ? 'text-red-600' : 'text-foreground'}`}>
+                    {new Date(assignment.due_date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {isPastDue && !hasSubmission && (
+                      <span className="ml-2 text-xs text-red-600">(Past due)</span>
                     )}
-                  </div>
-                  {submission.feedback && (
-                    <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Teacher Feedback</Label>
-                      <p className="text-sm text-white whitespace-pre-wrap">{submission.feedback}</p>
-                    </div>
-                  )}
+                  </dd>
                 </div>
+              )}
+              {assignment.total_marks && (
+                <div className="rounded-xl bg-secondary/60 p-4">
+                  <dt className="text-xs text-muted-foreground">Points</dt>
+                  <dd className="mt-1 text-sm font-medium tabular-nums text-foreground">{assignment.total_marks}</dd>
+                </div>
+              )}
+              {hasSubmission && submission?.submitted_at && (
+                <div className="rounded-xl bg-secondary/60 p-4">
+                  <dt className="text-xs text-muted-foreground">Submitted</dt>
+                  <dd className="mt-1 text-sm font-medium tabular-nums text-foreground">
+                    {new Date(submission.submitted_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
+
+          {assignment.pdf_url && (
+            <Button variant="outline" asChild>
+              <a href={buildAssetUrl(assignment.pdf_url)} target="_blank" rel="noopener noreferrer">
+                <FileText className="h-4 w-4" />
+                View assignment PDF
+              </a>
+            </Button>
+          )}
+
+          {hasSubmission && submission?.grade && (
+            <div className="space-y-3 border-t border-border/70 pt-6">
+              <p className="text-xs text-muted-foreground">Your grade</p>
+              <div className="flex items-baseline gap-3">
+                <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">{submission.grade}</p>
+                {submission.marks_obtained !== undefined && submission.marks_obtained !== null && (
+                  <p className="text-[15px] tabular-nums text-muted-foreground">
+                    {submission.marks_obtained}/{assignment.total_marks || 100}
+                  </p>
+                )}
               </div>
+              {submission.feedback && (
+                <div className="rounded-xl bg-secondary/60 p-4">
+                  <p className="mb-1.5 text-xs font-medium text-muted-foreground">Teacher feedback</p>
+                  <p className="whitespace-pre-wrap text-sm text-foreground">{submission.feedback}</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Submission Form - Google Classroom Style */}
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white text-xl">
-            Your Work
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            {hasSubmission ? 'Update your submission below' : 'Add your work below and click Turn in'}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 lg:space-y-6">
-            {/* Text Submission */}
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-6 p-6">
             <div>
-              <Label htmlFor="submissionText" className="text-base font-medium text-white mb-2 block">
-                Add Text
-              </Label>
+              <h2 className="text-[17px] font-semibold tracking-tight text-foreground">Your work</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {hasSubmission ? 'Update your submission below.' : 'Add your work below and select Turn in.'}
+              </p>
+            </div>
+
+            <Field label="Text" htmlFor="submissionText" hint="You can submit text, PDF files, or both.">
               <Textarea
                 id="submissionText"
                 value={submissionText}
                 onChange={(e) => setSubmissionText(e.target.value)}
-                placeholder="Enter your assignment text here..."
+                placeholder="Enter your assignment text here…"
                 rows={12}
-                className="mt-2 bg-background/50 border-white/20 focus:border-purple-500/50"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                You can submit text, PDF files, or both
-              </p>
-            </div>
+            </Field>
 
-            {/* File Upload */}
-            <div>
-              <Label htmlFor="files" className="text-base font-medium text-white mb-2 block">
-                Add Files
-              </Label>
-              <div className="mt-2 border-2 border-dashed border-white/20 rounded-lg p-6 text-center hover:border-purple-500/50 transition-colors">
-                <Input
-                  id="files"
-                  type="file"
-                  accept=".pdf"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="files"
-                  className="cursor-pointer flex flex-col items-center gap-2"
-                >
-                  <Upload className="h-8 w-8 text-purple-400" />
-                  <span className="text-sm text-white font-medium">
-                    {files.length > 0 ? `${files.length} file(s) selected` : 'Click to upload PDF files'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    PDF files only • Multiple files allowed
-                  </span>
-                </label>
-              </div>
-            </div>
+            <Field label="Files">
+              <Input
+                id="files"
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="files"
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-8 text-center transition-colors hover:border-primary/40 hover:bg-secondary/40"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                  <Upload className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  {files.length > 0 ? `${files.length} file(s) selected` : 'Click to upload PDF files'}
+                </span>
+                <span className="text-xs text-muted-foreground">PDF files only · Multiple files allowed</span>
+              </label>
+            </Field>
 
-            {/* Selected Files Preview */}
             {files.length > 0 && (
               <div className="space-y-2">
-                <Label>Selected Files</Label>
-                <div className="space-y-2">
+                <p className="text-[13px] font-medium text-foreground">Selected files</p>
+                <List>
                   {files.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-purple-400" />
-                        <span className="text-sm text-white">{file.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({(file.size / 1024).toFixed(2)} KB)
-                        </span>
-                      </div>
+                    <ListItem key={index} className="py-2.5">
+                      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="min-w-0 flex-1 truncate text-sm text-foreground">{file.name}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {(file.size / 1024).toFixed(2)} KB
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(index)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-destructive hover:bg-red-50"
+                        aria-label="Remove file"
                       >
                         <XCircle className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </ListItem>
                   ))}
-                </div>
+                </List>
               </div>
             )}
 
-            {/* Existing Files (if updating) */}
             {existingFileUrls.length > 0 && (
               <div className="space-y-2">
-                <Label>Current Submission Files</Label>
-                <div className="space-y-2">
+                <p className="text-[13px] font-medium text-foreground">Current submission files</p>
+                <List>
                   {existingFileUrls.map((url, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
-                    >
+                    <ListItem key={index} className="py-2.5">
                       <a
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300"
+                        className="flex min-w-0 flex-1 items-center gap-2 text-sm text-primary hover:underline underline-offset-4"
                       >
-                        <FileText className="h-4 w-4" />
+                        <FileText className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                         File {index + 1}
                       </a>
                       <Button
@@ -374,28 +325,27 @@ export default function StudentAssignmentPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeExistingFile(index)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-destructive hover:bg-red-50"
+                        aria-label="Remove file"
                       >
                         <XCircle className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </ListItem>
                   ))}
-                </div>
+                </List>
               </div>
             )}
 
-            {/* Action Buttons - Google Classroom Style */}
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
+            <div className="flex flex-col-reverse gap-3 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => router.back()}
                 disabled={submitting}
-                className="text-muted-foreground hover:text-white"
               >
                 Cancel
               </Button>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 {hasSubmission && (
                   <Button
                     type="button"
@@ -431,23 +381,21 @@ export default function StudentAssignmentPage() {
                     }}
                     disabled={submitting}
                   >
-                    Save Draft
+                    Save draft
                   </Button>
                 )}
                 <Button
                   type="submit"
                   disabled={submitting || (files.length === 0 && !submissionText.trim() && existingFileUrls.length === 0)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  {submitting ? 'Turning in...' : hasSubmission ? 'Update & Turn in' : 'Turn in'}
+                  {submitting ? 'Turning in…' : hasSubmission ? 'Update and turn in' : 'Turn in'}
                 </Button>
               </div>
             </div>
-          </form>
-        </CardContent>
+          </CardContent>
+        </form>
       </Card>
     </div>
   );
 }
-

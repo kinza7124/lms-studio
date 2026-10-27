@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import type { Course, Specialty } from '@/types';
 import { CourseCard } from '@/components/CourseCard';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { EmptyState, LoadingState, PageHeader, Select } from '@/components/ui/page';
+import { BookOpen, Search } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function CoursesPage() {
@@ -53,63 +54,67 @@ export default function CoursesPage() {
   };
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Course Catalog</h1>
-          <p className="mt-2 text-muted-foreground">
-            Browse all available courses and enroll in the ones that interest you
-          </p>
+    <div className="space-y-8">
+      <PageHeader
+        title="Course catalog"
+        description="Browse all available courses and enroll in the ones that interest you."
+        className="mb-0 md:mb-0"
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            strokeWidth={1.75}
+          />
+          <Input
+            type="text"
+            placeholder="Search courses"
+            aria-label="Search courses"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            className="pl-10"
+          />
         </div>
+        <Select
+          aria-label="Filter by specialty"
+          value={filters.specialtyId}
+          onChange={(e) => setFilters({ ...filters, specialtyId: e.target.value })}
+          className="sm:w-64"
+        >
+          <option value="">All specialties</option>
+          {specialties.map((specialty) => (
+            <option key={specialty.specialty_id} value={specialty.specialty_id}>
+              {specialty.specialty_name}
+            </option>
+          ))}
+        </Select>
       </div>
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <input
-              type="text"
-              placeholder="Search courses..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="w-full rounded border border-white/20 bg-white/5 px-4 py-2 text-white placeholder:text-muted-foreground"
-            />
-          </div>
-          <div>
-            <select
-              value={filters.specialtyId}
-              onChange={(e) => setFilters({ ...filters, specialtyId: e.target.value })}
-              className="w-full rounded border border-white/20 bg-white/5 px-4 py-2 text-white"
-            >
-              <option value="">All Specialties</option>
-              {specialties.map((specialty) => (
-                <option key={specialty.specialty_id} value={specialty.specialty_id}>
-                  {specialty.specialty_name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </CardContent>
-      </Card>
-
       {loading ? (
-        <p className="text-muted-foreground">Loading courses...</p>
+        <LoadingState label="Loading courses…" />
       ) : courses.length === 0 ? (
-        <p className="text-muted-foreground">No courses found.</p>
+        <EmptyState
+          icon={BookOpen}
+          title="No courses found"
+          description="Try a different search term or specialty."
+        />
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <CourseCard
-              key={course.course_id}
-              course={course}
-              onView={(id) => router.push(`/course/${id}`)}
-            />
-          ))}
+        <div className="space-y-4">
+          <p className="text-sm tabular-nums text-muted-foreground">
+            {courses.length} course{courses.length === 1 ? '' : 's'}
+          </p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course) => (
+              <CourseCard
+                key={course.course_id}
+                course={course}
+                onView={(id) => router.push(`/course/${id}`)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
-

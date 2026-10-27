@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { ArrowLeft, FileText, ClipboardList, BookOpen } from 'lucide-react';
+import { FileText, ClipboardList, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Alert, Badge, EmptyState, LoadingState, PageHeader, Section, type BadgeTone } from '@/components/ui/page';
 
 type AssignmentGrade = {
   assignment_id: number;
@@ -88,14 +89,13 @@ export default function CourseGradesPage() {
     }
   };
 
-  const getGradeColor = (grade?: string) => {
-    if (!grade) return 'text-muted-foreground';
-    if (grade === 'A') return 'text-green-400';
-    if (grade === 'B') return 'text-blue-400';
-    if (grade === 'C') return 'text-yellow-400';
-    if (grade === 'D') return 'text-orange-400';
-    if (grade === 'F') return 'text-red-400';
-    return 'text-muted-foreground';
+  const gradeTone = (grade?: string): BadgeTone => {
+    if (!grade) return 'neutral';
+    if (grade === 'A') return 'success';
+    if (grade === 'B') return 'primary';
+    if (grade === 'C' || grade === 'D') return 'warning';
+    if (grade === 'F') return 'danger';
+    return 'neutral';
   };
 
   const formatDate = (dateString?: string) => {
@@ -108,15 +108,15 @@ export default function CourseGradesPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   if (!grades) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 text-white">
-        <p>Failed to load grades. Please try again.</p>
-        <Button onClick={() => router.push('/grades')} className="mt-4">
-          Back to Grades
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Alert tone="error">Failed to load grades. Please try again.</Alert>
+        <Button variant="outline" onClick={() => router.push('/grades')}>
+          Back to grades
         </Button>
       </div>
     );
@@ -124,249 +124,220 @@ export default function CourseGradesPage() {
 
   const { course, assignments, quizzes, assessments } = grades;
 
+  const notSubmitted = <Badge>Not submitted</Badge>;
+  const noMarks = <Badge tone="warning">Graded · no marks yet</Badge>;
+
+  const ItemCell = ({ title, description, feedback, extra }: { title: string; description?: string; feedback?: string; extra?: React.ReactNode }) => (
+    <td className="min-w-[220px]">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium text-foreground">{title}</span>
+        {extra}
+      </div>
+      {description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{description}</p>}
+      {feedback && <p className="mt-1 text-xs italic text-muted-foreground">Feedback: {feedback}</p>}
+    </td>
+  );
+
+  const TableHead = () => (
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Due</th>
+        <th className="text-right">Score</th>
+        <th className="text-right">Status</th>
+      </tr>
+    </thead>
+  );
+
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/grades')}
-          className="text-white hover:text-white/80"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Grades
-        </Button>
-      </div>
+    <div className="space-y-10">
+      <PageHeader
+        back="Grades"
+        backHref="/grades"
+        eyebrow={course.code}
+        title={course.title}
+        description={course.description}
+        className="mb-0 md:mb-0"
+      />
 
-      <div>
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">{course.code} - {course.title}</h1>
-        <p className="text-muted-foreground mt-2">{course.description}</p>
-      </div>
-
-      {/* Assignments Section */}
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-purple-400" />
-            <CardTitle className="text-white">Assignments</CardTitle>
-          </div>
-          <CardDescription>
-            {assignments.length} assignment{assignments.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {assignments.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No assignments found</p>
-          ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <div
-                  key={assignment.assignment_id}
-                  className="rounded-lg border border-white/10 p-4 bg-white/5"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-white">{assignment.title}</h3>
-                      {assignment.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{assignment.description}</p>
+      <Section
+        title="Assignments"
+        description={`${assignments.length} assignment${assignments.length !== 1 ? 's' : ''}`}
+      >
+        {assignments.length === 0 ? (
+          <EmptyState icon={FileText} title="No assignments found" />
+        ) : (
+          <Card className="overflow-x-auto">
+            <table className="data-table">
+              <TableHead />
+              <tbody>
+                {assignments.map((assignment) => (
+                  <tr key={assignment.assignment_id}>
+                    <ItemCell
+                      title={assignment.title}
+                      description={assignment.description}
+                      feedback={assignment.submission_id ? assignment.feedback : undefined}
+                    />
+                    <td className="whitespace-nowrap tabular-nums text-muted-foreground">
+                      {assignment.due_date ? formatDate(assignment.due_date) : '—'}
+                    </td>
+                    <td className="whitespace-nowrap text-right tabular-nums">
+                      {assignment.submission_id && assignment.marks_obtained !== null && assignment.marks_obtained !== undefined ? (
+                        <span className="font-medium text-foreground">
+                          {assignment.marks_obtained}
+                          {assignment.total_marks && <span className="text-muted-foreground">{` / ${assignment.total_marks}`}</span>}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {assignment.total_marks ? `— / ${assignment.total_marks}` : '—'}
+                        </span>
                       )}
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 mt-2 text-xs text-muted-foreground">
-                        {assignment.due_date && (
-                          <span>Due: {formatDate(assignment.due_date)}</span>
-                        )}
-                        {assignment.total_marks && (
-                          <span>Total: {assignment.total_marks} marks</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
+                    </td>
+                    <td className="whitespace-nowrap text-right">
                       {assignment.submission_id ? (
-                        <>
-                          {assignment.marks_obtained !== null && assignment.marks_obtained !== undefined ? (
-                            <>
-                              <p className="text-lg font-bold text-white">
-                                {assignment.marks_obtained}
-                                {assignment.total_marks && ` / ${assignment.total_marks}`}
-                              </p>
-                              {assignment.grade && (
-                                <p className={`text-sm font-semibold ${getGradeColor(assignment.grade)}`}>
-                                  {assignment.grade}
-                                </p>
-                              )}
-                            </>
+                        assignment.marks_obtained !== null && assignment.marks_obtained !== undefined ? (
+                          assignment.grade ? (
+                            <Badge tone={gradeTone(assignment.grade)}>{assignment.grade}</Badge>
                           ) : (
-                            <p className="text-sm text-yellow-400">Graded - No marks yet</p>
-                          )}
-                          {assignment.feedback && (
-                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              {assignment.feedback}
-                            </p>
-                          )}
-                        </>
+                            <Badge tone="success">Graded</Badge>
+                          )
+                        ) : (
+                          noMarks
+                        )
                       ) : (
-                        <p className="text-sm text-muted-foreground">Not submitted</p>
+                        notSubmitted
                       )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
+      </Section>
 
-      {/* Quizzes Section */}
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-400" />
-            <CardTitle className="text-white">Quizzes</CardTitle>
-          </div>
-          <CardDescription>
-            {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {quizzes.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No quizzes found</p>
-          ) : (
-            <div className="space-y-4">
-              {quizzes.map((quiz) => (
-                <div
-                  key={quiz.quiz_id}
-                  className="rounded-lg border border-white/10 p-4 bg-white/5"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-white">{quiz.title}</h3>
-                      {quiz.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{quiz.description}</p>
+      <Section
+        title="Quizzes"
+        description={`${quizzes.length} quiz${quizzes.length !== 1 ? 'zes' : ''}`}
+      >
+        {quizzes.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="No quizzes found" />
+        ) : (
+          <Card className="overflow-x-auto">
+            <table className="data-table">
+              <TableHead />
+              <tbody>
+                {quizzes.map((quiz) => (
+                  <tr key={quiz.quiz_id}>
+                    <ItemCell
+                      title={quiz.title}
+                      description={quiz.description}
+                      feedback={quiz.submission_id ? quiz.feedback : undefined}
+                    />
+                    <td className="whitespace-nowrap tabular-nums text-muted-foreground">
+                      {quiz.due_date ? formatDate(quiz.due_date) : '—'}
+                    </td>
+                    <td className="whitespace-nowrap text-right tabular-nums">
+                      {quiz.submission_id && quiz.marks_obtained !== null && quiz.marks_obtained !== undefined ? (
+                        <span className="font-medium text-foreground">
+                          {quiz.marks_obtained}
+                          {quiz.total_marks && <span className="text-muted-foreground">{` / ${quiz.total_marks}`}</span>}
+                        </span>
+                      ) : quiz.submission_id && quiz.score !== null && quiz.score !== undefined ? (
+                        <span className="font-medium text-foreground">{quiz.score}%</span>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {quiz.total_marks ? `— / ${quiz.total_marks}` : '—'}
+                        </span>
                       )}
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 mt-2 text-xs text-muted-foreground">
-                        {quiz.due_date && (
-                          <span>Due: {formatDate(quiz.due_date)}</span>
-                        )}
-                        {quiz.total_marks && (
-                          <span>Total: {quiz.total_marks} marks</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
+                    </td>
+                    <td className="whitespace-nowrap text-right">
                       {quiz.submission_id ? (
-                        <>
-                          {quiz.marks_obtained !== null && quiz.marks_obtained !== undefined ? (
-                            <p className="text-lg font-bold text-white">
-                              {quiz.marks_obtained}
-                              {quiz.total_marks && ` / ${quiz.total_marks}`}
-                            </p>
-                          ) : quiz.score !== null && quiz.score !== undefined ? (
-                            <p className="text-lg font-bold text-white">
-                              {quiz.score}%
-                            </p>
-                          ) : (
-                            <p className="text-sm text-yellow-400">Graded - No marks yet</p>
-                          )}
-                          {quiz.feedback && (
-                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              {quiz.feedback}
-                            </p>
-                          )}
-                        </>
+                        (quiz.marks_obtained !== null && quiz.marks_obtained !== undefined) ||
+                        (quiz.score !== null && quiz.score !== undefined) ? (
+                          <Badge tone="success">Graded</Badge>
+                        ) : (
+                          noMarks
+                        )
                       ) : (
-                        <p className="text-sm text-muted-foreground">Not submitted</p>
+                        notSubmitted
                       )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
+      </Section>
 
-      {/* Assessments Section */}
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-green-400" />
-            <CardTitle className="text-white">Assessments</CardTitle>
-          </div>
-          <CardDescription>
-            {assessments.length} assessment{assessments.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {assessments.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No assessments found</p>
-          ) : (
-            <div className="space-y-4">
-              {assessments.map((assessment) => (
-                <div
-                  key={assessment.assessment_id}
-                  className="rounded-lg border border-white/10 p-4 bg-white/5"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-white">{assessment.title}</h3>
-                        {assessment.assessment_type && (
-                          <span className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-300">
-                            {assessment.assessment_type}
-                          </span>
-                        )}
-                        {assessment.weight_percentage && (
-                          <span className="text-xs text-muted-foreground">
-                            ({assessment.weight_percentage}% weight)
-                          </span>
-                        )}
-                      </div>
-                      {assessment.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{assessment.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 mt-2 text-xs text-muted-foreground">
-                        {assessment.due_date && (
-                          <span>Due: {formatDate(assessment.due_date)}</span>
-                        )}
-                        {assessment.total_marks && (
-                          <span>Total: {assessment.total_marks} marks</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      {assessment.submission_id ? (
+      <Section
+        title="Assessments"
+        description={`${assessments.length} assessment${assessments.length !== 1 ? 's' : ''}`}
+      >
+        {assessments.length === 0 ? (
+          <EmptyState icon={BookOpen} title="No assessments found" />
+        ) : (
+          <Card className="overflow-x-auto">
+            <table className="data-table">
+              <TableHead />
+              <tbody>
+                {assessments.map((assessment) => (
+                  <tr key={assessment.assessment_id}>
+                    <ItemCell
+                      title={assessment.title}
+                      description={assessment.description}
+                      feedback={assessment.submission_id ? assessment.feedback : undefined}
+                      extra={
                         <>
-                          {assessment.marks_obtained !== null && assessment.marks_obtained !== undefined ? (
-                            <>
-                              <p className="text-lg font-bold text-white">
-                                {assessment.marks_obtained}
-                                {assessment.total_marks && ` / ${assessment.total_marks}`}
-                              </p>
-                              {assessment.grade && (
-                                <p className={`text-sm font-semibold ${getGradeColor(assessment.grade)}`}>
-                                  {assessment.grade}
-                                </p>
-                              )}
-                            </>
-                          ) : (
-                            <p className="text-sm text-yellow-400">Graded - No marks yet</p>
+                          {assessment.assessment_type && (
+                            <Badge className="capitalize">{assessment.assessment_type}</Badge>
                           )}
-                          {assessment.feedback && (
-                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                              {assessment.feedback}
-                            </p>
+                          {assessment.weight_percentage && (
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              {assessment.weight_percentage}% weight
+                            </span>
                           )}
                         </>
+                      }
+                    />
+                    <td className="whitespace-nowrap tabular-nums text-muted-foreground">
+                      {assessment.due_date ? formatDate(assessment.due_date) : '—'}
+                    </td>
+                    <td className="whitespace-nowrap text-right tabular-nums">
+                      {assessment.submission_id && assessment.marks_obtained !== null && assessment.marks_obtained !== undefined ? (
+                        <span className="font-medium text-foreground">
+                          {assessment.marks_obtained}
+                          {assessment.total_marks && <span className="text-muted-foreground">{` / ${assessment.total_marks}`}</span>}
+                        </span>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Not submitted</p>
+                        <span className="text-muted-foreground">
+                          {assessment.total_marks ? `— / ${assessment.total_marks}` : '—'}
+                        </span>
                       )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </td>
+                    <td className="whitespace-nowrap text-right">
+                      {assessment.submission_id ? (
+                        assessment.marks_obtained !== null && assessment.marks_obtained !== undefined ? (
+                          assessment.grade ? (
+                            <Badge tone={gradeTone(assessment.grade)}>{assessment.grade}</Badge>
+                          ) : (
+                            <Badge tone="success">Graded</Badge>
+                          )
+                        ) : (
+                          noMarks
+                        )
+                      ) : (
+                        notSubmitted
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
+      </Section>
     </div>
   );
 }
-

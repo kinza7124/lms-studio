@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { BookOpen, FileText, BarChart3, Users, ClipboardCheck, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
@@ -12,69 +13,59 @@ export default function HomePage() {
     { label: 'Avg. satisfaction', value: '4.9/5' },
   ];
 
-  const highlights = [
-    'Streamlined course & lecture builder',
-    'Secure PDF delivery with instant previews',
-    'Realtime analytics-ready API foundation',
+  const features = [
+    { icon: BookOpen, title: 'Course builder', body: 'Structure courses and lectures with video and PDF resources in minutes.' },
+    { icon: ClipboardCheck, title: 'Assignments & quizzes', body: 'Collect submissions, grade with rubrics, and run timed assessments.' },
+    { icon: BarChart3, title: 'Progress tracking', body: 'See where every learner stands with clear, per-course progress.' },
+    { icon: Users, title: 'Roles that fit', body: 'Purpose-built views for admins, teachers, and students.' },
+    { icon: FileText, title: 'Secure documents', body: 'Deliver PDFs with instant in-browser previews.' },
+    { icon: ShieldCheck, title: 'Integrity built in', body: 'Plagiarism checks on submissions, surfaced right where you grade.' },
   ];
 
   return (
-    <section className="space-y-12 pb-12 relative">
-      <div className="glass-panel flex flex-col gap-10 lg:flex-row card-hover">
-        <div className="flex-1">
-          <p className="text-xs uppercase tracking-[0.3em] text-purple-200/80">Next-gen LMS</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-tight text-white lg:text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
-            Build cinematic learning experiences your students will remember.
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-            Manage enrollments, publish lectures with video + PDF resources, and keep admins in flow
-            with a polished dashboard powered by Node.js, PostgreSQL, and Next.js.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/30"
-              onClick={() => router.push('/signup')}
-            >
-              Create account
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-white/20 bg-transparent text-white backdrop-blur hover:bg-white/10"
-              onClick={() => router.push('/login')}
-            >
-              Admin login
-            </Button>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {stats.map((stat) => (
-              <div 
-                key={stat.label} 
-                className="rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 p-4 backdrop-blur-sm transition-all duration-300 hover:border-purple-400/30 hover:from-purple-500/20 hover:to-indigo-500/20 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-              >
-                <p className="text-2xl font-semibold bg-gradient-to-r from-purple-200 to-cyan-200 bg-clip-text text-transparent">{stat.value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+    <div className="pb-16">
+      <section className="mx-auto max-w-3xl pt-10 text-center md:pt-20">
+        <p className="text-sm font-medium text-primary">LMS Studio</p>
+        <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+          Teaching, beautifully organized.
+        </h1>
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+          Courses, lectures, assignments and grades in one calm, focused workspace for your whole institution.
+        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <Button size="lg" onClick={() => router.push('/signup')}>
+            Get started
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => router.push('/login')}>
+            Sign in
+          </Button>
         </div>
-        <div className="flex-1 space-y-4 rounded-3xl border border-purple-400/20 bg-gradient-to-br from-purple-500/40 via-indigo-600/30 to-slate-900/70 p-4 md:p-6 lg:p-8 shadow-2xl shadow-purple-500/20 backdrop-blur-xl transition-all duration-300 hover:border-purple-400/40 hover:shadow-purple-500/30 hover:scale-[1.02]">
-          <p className="text-sm font-medium text-purple-100">Why teams choose LMS Studio</p>
-          <ul className="space-y-4 text-sm text-purple-50/90">
-            {highlights.map((item) => (
-              <li key={item} className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-white/80" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="rounded-2xl border border-white/20 bg-black/30 p-4 text-sm text-purple-100/80">
-            “This stack lets us launch premium curriculum in days, not months.”
-            <p className="mt-2 text-xs uppercase tracking-wide text-white/60">— Product teams</p>
+      </section>
+
+      <section className="mx-auto mt-20 grid max-w-3xl grid-cols-3 divide-x divide-border rounded-2xl border border-border/70 bg-card md:mt-24">
+        {stats.map((stat) => (
+          <div key={stat.label} className="px-4 py-6 text-center md:py-8">
+            <p className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{stat.value}</p>
+            <p className="mt-1 text-xs text-muted-foreground md:text-sm">{stat.label}</p>
           </div>
+        ))}
+      </section>
+
+      <section className="mt-24 md:mt-32">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Everything a course needs.</h2>
+          <p className="mt-4 text-muted-foreground md:text-lg">Nothing it doesn&apos;t.</p>
         </div>
-      </div>
-    </section>
+        <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-border/70 bg-border/70 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="bg-card p-7">
+              <Icon className="h-6 w-6 text-primary" strokeWidth={1.75} />
+              <h3 className="mt-5 text-[17px] font-semibold tracking-tight">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

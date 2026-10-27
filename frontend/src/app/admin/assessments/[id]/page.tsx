@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { ArrowUpRight, Inbox, Paperclip } from 'lucide-react';
 import api from '@/lib/api';
 import type { Assessment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, Avatar, Badge, EmptyState, Field, List, ListItem, LoadingState, PageHeader } from '@/components/ui/page';
 import { PlagiarismReportDisplay } from '@/components/PlagiarismReport';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
@@ -107,207 +108,183 @@ export default function AssessmentSubmissionsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-900/10 to-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400"></div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!assessment) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-900/10 to-slate-950 p-4 md:p-6 lg:p-8">
-        <div className="text-center text-white">Assessment not found</div>
+      <div className="space-y-8">
+        <PageHeader eyebrow="Admin" title="Assessment" back />
+        <Alert tone="error">Assessment not found</Alert>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-900/10 to-slate-950 p-4 md:p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Button
-          variant="ghost"
-          className="mb-6 text-muted-foreground hover:text-white"
-          onClick={() => router.back()}
-        >
-          ← Back
-        </Button>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title={assessment.title}
+        description={
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Badge className="capitalize">{assessment.assessment_type}</Badge>
+            <span className="tabular-nums">{assessment.total_marks} marks</span>
+          </span>
+        }
+        back
+      />
 
-        <div className="grid md:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
-          {/* Submissions List */}
-          <div className="md:col-span-1">
-            <Card className="border-white/10 bg-white/5 sticky top-4">
-              <CardHeader>
-                <CardTitle className="text-white">Submissions ({submissions.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {submissions.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No submissions yet</p>
-                  ) : (
-                    submissions.map((submission) => (
-                      <Button
-                        key={submission.submission_id}
-                        variant={selectedSubmission?.submission_id === submission.submission_id ? 'default' : 'outline'}
-                        className="w-full justify-start text-left h-auto py-3 px-3"
-                        onClick={() => handleSelectSubmission(submission)}
-                      >
-                        <div className="flex flex-col gap-1 w-full">
-                          <span className="font-semibold text-sm">{submission.student_name || 'Unknown Student'}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(submission.submitted_at).toLocaleDateString()}
-                          </span>
-                          {submission.score !== null && submission.score !== undefined && (
-                            <span className={`text-xs font-semibold ${submission.score >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-                              Score: {submission.score}/{assessment.total_marks}
-                            </span>
-                          )}
-                        </div>
-                      </Button>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Submission Details */}
-          <div className="md:col-span-2 space-y-3 md:space-y-4 lg:space-y-6">
-            {selectedSubmission ? (
-              <>
-                {/* Assessment Info */}
-                <Card className="border-white/10 bg-white/5">
-                  <CardHeader>
-                    <CardTitle className="text-white">{assessment.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-muted-foreground">Type</Label>
-                      <p className="text-white capitalize">{assessment.assessment_type}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Total Marks</Label>
-                      <p className="text-white">{assessment.total_marks}</p>
-                    </div>
-                    {assessment.description && (
-                      <div>
-                        <Label className="text-muted-foreground">Description</Label>
-                        <p className="text-white whitespace-pre-wrap text-sm">{assessment.description}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Submission Content */}
-                <Card className="border-white/10 bg-white/5">
-                  <CardHeader>
-                    <CardTitle className="text-white">Submission Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-muted-foreground">Student</Label>
-                      <p className="text-white">{selectedSubmission.student_name || 'Unknown'}</p>
-                    </div>
-
-                    <div>
-                      <Label className="text-muted-foreground">Submitted At</Label>
-                      <p className="text-white">{new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
-                    </div>
-
-                    {selectedSubmission.submission_text && (
-                      <div>
-                        <Label className="text-muted-foreground">Submission Text</Label>
-                        <div className="bg-black/30 rounded-lg p-4 mt-2 max-h-64 overflow-y-auto">
-                          <p className="text-white whitespace-pre-wrap text-sm">{selectedSubmission.submission_text}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
-                      <div>
-                        <Label className="text-muted-foreground">Uploaded Files</Label>
-                        <div className="space-y-2 mt-2">
-                          {selectedSubmission.file_urls.map((url, idx) => (
-                            <a
-                              key={idx}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-3 bg-black/30 rounded-lg hover:bg-black/50 transition-colors"
-                            >
-                              <span className="text-purple-400">📎</span>
-                              <span className="text-white text-sm truncate">{url.split('/').pop() || `File ${idx + 1}`}</span>
-                              <span className="text-muted-foreground text-xs ml-auto">↗</span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedSubmission.plagiarism_checked && (
-                      <div>
-                        <PlagiarismReportDisplay
-                          plagiarismScore={selectedSubmission.plagiarism_score || 0}
-                          plagiarismReport={selectedSubmission.plagiarism_report}
-                          plagiarismChecked={selectedSubmission.plagiarism_checked}
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Grading Form */}
-                <Card className="border-white/10 bg-white/5">
-                  <CardHeader>
-                    <CardTitle className="text-white">Grade Submission</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleGradeSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="score" className="text-muted-foreground">
-                          Score (out of {assessment.total_marks})
-                        </Label>
-                        <Input
-                          id="score"
-                          type="number"
-                          min="0"
-                          max={assessment.total_marks}
-                          step="0.5"
-                          value={gradeForm.score}
-                          onChange={(e) => setGradeForm({ ...gradeForm, score: e.target.value })}
-                          className="mt-2 bg-white/10 border-white/20 text-white"
-                          placeholder="Enter score"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="feedback" className="text-muted-foreground">
-                          Feedback (optional)
-                        </Label>
-                        <Textarea
-                          id="feedback"
-                          value={gradeForm.feedback}
-                          onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
-                          className="mt-2 bg-white/10 border-white/20 text-white min-h-[120px]"
-                          placeholder="Enter feedback for the student"
-                        />
-                      </div>
-
-                      <Button type="submit" disabled={grading} className="w-full">
-                        {grading ? 'Grading...' : 'Save Grade'}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <div className="space-y-3 lg:sticky lg:top-4">
+            <p className="text-sm font-medium text-foreground">
+              Submissions <span className="tabular-nums text-muted-foreground">{submissions.length}</span>
+            </p>
+            {submissions.length === 0 ? (
+              <EmptyState icon={Inbox} title="No submissions yet" />
             ) : (
-              <Card className="border-white/10 bg-white/5">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  Select a submission to view and grade
-                </CardContent>
-              </Card>
+              <List className="max-h-[28rem] overflow-y-auto">
+                {submissions.map((submission) => (
+                  <ListItem
+                    key={submission.submission_id}
+                    active={selectedSubmission?.submission_id === submission.submission_id}
+                    onClick={() => handleSelectSubmission(submission)}
+                  >
+                    <Avatar name={submission.student_name || 'Unknown Student'} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {submission.student_name || 'Unknown Student'}
+                      </p>
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {new Date(submission.submitted_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {submission.score !== null && submission.score !== undefined && (
+                      <Badge tone={submission.score >= 50 ? 'success' : 'danger'} className="tabular-nums">
+                        {submission.score}/{assessment.total_marks}
+                      </Badge>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
             )}
           </div>
+        </div>
+
+        <div className="space-y-6 lg:col-span-2">
+          {selectedSubmission ? (
+            <>
+              {assessment.description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-[17px]">About this assessment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{assessment.description}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-[17px]">Submission</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-5 pt-0">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Student</p>
+                      <p className="mt-1 text-sm text-foreground">{selectedSubmission.student_name || 'Unknown'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Submitted</p>
+                      <p className="mt-1 text-sm tabular-nums text-foreground">{new Date(selectedSubmission.submitted_at).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {selectedSubmission.submission_text && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Response</p>
+                      <div className="mt-2 max-h-64 overflow-y-auto rounded-xl bg-secondary/60 p-4">
+                        <p className="whitespace-pre-wrap text-sm text-foreground">{selectedSubmission.submission_text}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Files</p>
+                      <div className="mt-2 space-y-2">
+                        {selectedSubmission.file_urls.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 rounded-xl bg-secondary/60 px-4 py-3 transition-colors hover:bg-secondary"
+                          >
+                            <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                            <span className="min-w-0 truncate text-sm text-foreground">{url.split('/').pop() || `File ${idx + 1}`}</span>
+                            <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSubmission.plagiarism_checked && (
+                    <div>
+                      <PlagiarismReportDisplay
+                        plagiarismScore={selectedSubmission.plagiarism_score || 0}
+                        plagiarismReport={selectedSubmission.plagiarism_report}
+                        plagiarismChecked={selectedSubmission.plagiarism_checked}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-[17px]">Grade</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <form onSubmit={handleGradeSubmit} className="space-y-5">
+                    <Field label="Score" htmlFor="score" hint={`Out of ${assessment.total_marks}`}>
+                      <Input
+                        id="score"
+                        type="number"
+                        min="0"
+                        max={assessment.total_marks}
+                        step="0.5"
+                        value={gradeForm.score}
+                        onChange={(e) => setGradeForm({ ...gradeForm, score: e.target.value })}
+                        className="max-w-[12rem]"
+                        placeholder="Enter score"
+                      />
+                    </Field>
+
+                    <Field label="Feedback" htmlFor="feedback" hint="Optional">
+                      <Textarea
+                        id="feedback"
+                        value={gradeForm.feedback}
+                        onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
+                        className="min-h-[120px]"
+                        placeholder="Enter feedback for the student"
+                      />
+                    </Field>
+
+                    <div className="flex justify-end">
+                      <Button type="submit" disabled={grading}>
+                        {grading ? 'Saving…' : 'Save grade'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <EmptyState icon={Inbox} title="Select a submission" description="Choose a submission to view and grade it." />
+          )}
         </div>
       </div>
     </div>

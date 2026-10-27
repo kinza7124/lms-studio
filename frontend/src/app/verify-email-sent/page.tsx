@@ -2,8 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
+import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingState } from '@/components/ui/page';
 import { useState, Suspense } from 'react';
 
 function VerifyEmailSentContent() {
@@ -28,19 +29,11 @@ function VerifyEmailSentContent() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <Card className="w-full max-w-md border-white/10 bg-white/5">
-        <CardHeader>
-          <CardTitle className="text-white">Check Your Email</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            We've sent a verification link to your email address
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <AuthShell title="Check your email" description="We've sent a verification link to your email address">
           <div className="flex items-center justify-center">
-            <div className="rounded-full bg-purple-500/20 p-2 md:p-3 lg:p-4">
+            <div className="rounded-full bg-primary/10 p-2 md:p-3 lg:p-4">
               <svg
-                className="w-12 h-12 text-purple-400"
+                className="w-12 h-12 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -54,7 +47,7 @@ function VerifyEmailSentContent() {
               </svg>
             </div>
           </div>
-          <p className="text-center text-white">
+          <p className="text-center text-foreground">
             Please check your email <strong>{email}</strong> and click the verification link to
             activate your account.
           </p>
@@ -62,7 +55,7 @@ function VerifyEmailSentContent() {
             Didn't receive the email? Check your spam folder or click the button below to resend.
           </p>
           {message && (
-            <p className={`text-center text-sm ${message.includes('sent') ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-center text-sm ${message.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
               {message}
             </p>
           )}
@@ -72,25 +65,23 @@ function VerifyEmailSentContent() {
               className="flex-1"
               onClick={() => router.push('/login')}
             >
-              Back to Login
+              Back to sign in
             </Button>
             <Button
-              className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500"
+              className="flex-1 bg-primary hover:bg-primary/90 text-white"
               onClick={handleResend}
               disabled={loading || !email}
             >
-              {loading ? 'Sending...' : 'Resend Email'}
+              {loading ? 'Sending…' : 'Resend email'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 
 export default function VerifyEmailSentPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-[60vh] text-white">Loading...</div>}>
+    <Suspense fallback={<LoadingState />}>
       <VerifyEmailSentContent />
     </Suspense>
   );

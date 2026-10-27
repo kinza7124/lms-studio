@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState, LoadingState, PageHeader, Section, StatGrid } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { BookOpen, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import { BookOpen, CheckCircle, ChevronRight, Clock, TrendingUp } from 'lucide-react';
 
 type Progress = {
   progress_id: number;
@@ -67,186 +68,126 @@ export default function ProgressPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   const overallProgress = getOverallProgress();
   const averageScore = getAverageScore();
 
+  const Meter = ({ value }: { value: number }) => (
+    <span className="block h-1.5 overflow-hidden rounded-full bg-secondary">
+      <span className="block h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${value}%` }} />
+    </span>
+  );
+
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">My Progress</h1>
-        <p className="mt-2 text-muted-foreground">Track your learning progress across all courses</p>
-      </div>
+    <div className="space-y-10">
+      <PageHeader
+        title="My progress"
+        description="Track your learning progress across all courses."
+        className="mb-0 md:mb-0"
+      />
 
-      {/* Overall Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Overall Progress</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">{overallProgress}%</div>
-            <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all"
-                style={{ width: `${overallProgress}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+      <StatGrid
+        items={[
+          {
+            label: 'Overall progress',
+            value: `${overallProgress}%`,
+            hint: (
+              <span className="mt-2 block">
+                <Meter value={overallProgress} />
+              </span>
+            ),
+          },
+          {
+            label: 'Average score',
+            value: averageScore !== null ? `${averageScore}%` : 'N/A',
+            hint:
+              averageScore !== null
+                ? `Across ${progress.filter(p => p.average_score !== null).length} courses`
+                : undefined,
+          },
+          { label: 'Active courses', value: progress.length, hint: 'Enrolled courses' },
+        ]}
+      />
 
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Average Score</CardTitle>
-            <BookOpen className="h-4 w-4 text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
-              {averageScore !== null ? `${averageScore}%` : 'N/A'}
-            </div>
-            {averageScore !== null && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Across {progress.filter(p => p.average_score !== null).length} courses
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Courses</CardTitle>
-            <CheckCircle className="h-4 w-4 text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">{progress.length}</div>
-            <p className="text-xs text-muted-foreground mt-2">Enrolled courses</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Course Progress */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-white">Course Progress</h2>
+      <Section title="Course progress">
         {progress.length === 0 ? (
-          <Card className="border-white/10 bg-white/5">
-            <CardContent className="p-4 md:p-6 lg:p-8 text-center text-muted-foreground">
-              No progress data available. Enroll in courses to see your progress.
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={TrendingUp}
+            title="No progress data available"
+            description="Enroll in courses to see your progress."
+          />
         ) : (
-          progress.map((p) => {
-            const assignmentsProgress = getCompletionPercentage(p.assignments_completed, p.assignments_total);
-            const quizzesProgress = getCompletionPercentage(p.quizzes_completed, p.quizzes_total);
-            const assessmentsProgress = getCompletionPercentage(p.assessments_completed, p.assessments_total);
-            const courseProgress = Math.round((assignmentsProgress + quizzesProgress + assessmentsProgress) / 3);
+          <div className="space-y-4">
+            {progress.map((p) => {
+              const assignmentsProgress = getCompletionPercentage(p.assignments_completed, p.assignments_total);
+              const quizzesProgress = getCompletionPercentage(p.quizzes_completed, p.quizzes_total);
+              const assessmentsProgress = getCompletionPercentage(p.assessments_completed, p.assessments_total);
+              const courseProgress = Math.round((assignmentsProgress + quizzesProgress + assessmentsProgress) / 3);
 
-            return (
-              <Card
-                key={p.progress_id}
-                className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                onClick={() => router.push(`/course/${p.course_id}`)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-white">{p.course_title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">{p.course_code}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-purple-400">{courseProgress}%</div>
-                      <p className="text-xs text-muted-foreground">Complete</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Overall Progress Bar */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Overall Progress</span>
-                      <span className="text-sm font-medium text-white">{courseProgress}%</span>
-                    </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all"
-                        style={{ width: `${courseProgress}%` }}
-                      />
-                    </div>
-                  </div>
+              const breakdown = [
+                { label: 'Assignments', icon: CheckCircle, done: p.assignments_completed, total: p.assignments_total, value: assignmentsProgress },
+                { label: 'Quizzes', icon: Clock, done: p.quizzes_completed, total: p.quizzes_total, value: quizzesProgress },
+                { label: 'Assessments', icon: BookOpen, done: p.assessments_completed, total: p.assessments_total, value: assessmentsProgress },
+              ];
 
-                  {/* Breakdown */}
-                  <div className="grid grid-cols-3 gap-4 pt-2">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Assignments
-                        </span>
-                        <span className="text-xs font-medium text-white">
-                          {p.assignments_completed}/{p.assignments_total}
-                        </span>
+              return (
+                <Card
+                  key={p.progress_id}
+                  className="card-hover cursor-pointer"
+                  onClick={() => router.push(`/course/${p.course_id}`)}
+                >
+                  <CardContent className="space-y-5 p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium tracking-wide text-muted-foreground">{p.course_code}</p>
+                        <h3 className="mt-1 truncate text-[17px] font-semibold tracking-tight text-foreground">
+                          {p.course_title}
+                        </h3>
                       </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-purple-500 transition-all"
-                          style={{ width: `${assignmentsProgress}%` }}
-                        />
+                      <div className="flex shrink-0 items-center gap-1 text-right">
+                        <span className="text-2xl font-semibold tracking-tight tabular-nums text-foreground">
+                          {courseProgress}%
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                       </div>
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Quizzes
-                        </span>
-                        <span className="text-xs font-medium text-white">
-                          {p.quizzes_completed}/{p.quizzes_total}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500 transition-all"
-                          style={{ width: `${quizzesProgress}%` }}
-                        />
-                      </div>
+                    <Meter value={courseProgress} />
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {breakdown.map((b) => (
+                        <div key={b.label} className="rounded-xl bg-secondary/60 p-4">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <b.icon className="h-4 w-4" strokeWidth={1.75} />
+                              {b.label}
+                            </span>
+                            <span className="text-xs font-medium tabular-nums text-foreground">
+                              {b.done}/{b.total}
+                            </span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-card">
+                            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${b.value}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          Assessments
-                        </span>
-                        <span className="text-xs font-medium text-white">
-                          {p.assessments_completed}/{p.assessments_total}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-cyan-500 transition-all"
-                          style={{ width: `${assessmentsProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {p.average_score !== null && (
-                    <div className="pt-2 border-t border-white/10">
+                    {p.average_score !== null && (
                       <p className="text-sm text-muted-foreground">
-                        Average Score: <span className="text-white font-semibold">{p.average_score}%</span>
+                        Average score{' '}
+                        <span className="font-semibold tabular-nums text-foreground">{p.average_score}%</span>
                       </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
-      </div>
+      </Section>
     </div>
   );
 }
-

@@ -1,14 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import api from '@/lib/api';
 import type { Submission, Assignment } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, ShieldCheck, Users } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Alert,
+  Avatar,
+  Badge,
+  EmptyState,
+  Field,
+  List,
+  ListItem,
+  LoadingState,
+  PageHeader,
+  Section,
+  StatGrid,
+} from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 // Helper function to convert relative URLs to absolute URLs
@@ -22,7 +35,6 @@ const buildAssetUrl = (url?: string) => {
 
 export default function AssignmentSubmissionsPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [students, setStudents] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +42,7 @@ export default function AssignmentSubmissionsPage() {
   const [plagiarismResults, setPlagiarismResults] = useState<any[]>([]);
   const [comparingPlagiarism, setComparingPlagiarism] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<{ student1?: number; student2?: number }>({});
+  const [activeKey, setActiveKey] = useState<number | null>(null);
   useAuthGuard();
 
   useEffect(() => {
@@ -154,312 +167,300 @@ export default function AssignmentSubmissionsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
+  const submittedCount = students.filter((s) => s.submission_id).length;
+  const activeStudent =
+    students.find((s) => (s.submission_id || s.student_id) === activeKey) || students[0];
+  const activeFormKey = activeStudent ? activeStudent.submission_id || activeStudent.student_id : 0;
+  const activeHasSubmitted = !!activeStudent?.submission_id;
+  const plagiarismTone = (score: number) => (score > 50 ? 'danger' : score > 20 ? 'warning' : 'success');
+
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">
-            {assignment?.title || 'Assignment Submissions'}
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Grade all enrolled students for this assignment (Total Marks: {assignment?.total_marks || 100})
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => router.back()}>
-          Back
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        back
+        eyebrow="Submissions"
+        title={assignment?.title || 'Assignment submissions'}
+        description="Grade all enrolled students for this assignment."
+        actions={
+          <Button
+            variant="outline"
+            onClick={handleCheckAllPlagiarism}
+            disabled={comparingPlagiarism || students.filter(s => s.submission_id).length < 2}
+          >
+            <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />
+            {comparingPlagiarism ? 'Checking…' : 'Check all plagiarism'}
+          </Button>
+        }
+      />
 
       {assignment && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Assignment Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-white">{assignment.description}</p>
-            {assignment.due_date && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Due: {new Date(assignment.due_date).toLocaleString()}
-              </p>
-            )}
-            <p className="text-sm text-purple-300 mt-2">
-              Total Marks: {assignment.total_marks || 100}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <StatGrid
+            items={[
+              { label: 'Students', value: students.length },
+              { label: 'Submitted', value: submittedCount },
+              { label: 'Total marks', value: assignment.total_marks || 100 },
+            ]}
+          />
+          {(assignment.description || assignment.due_date) && (
+            <Card>
+              <CardContent className="space-y-2 p-6">
+                {assignment.description && <p className="text-[15px] text-foreground">{assignment.description}</p>}
+                {assignment.due_date && (
+                  <p className="text-xs text-muted-foreground">
+                    Due {new Date(assignment.due_date).toLocaleString()}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-white">
-              All Enrolled Students ({students.length})
-            </CardTitle>
-            <Button
-              variant="outline"
-              onClick={handleCheckAllPlagiarism}
-              disabled={comparingPlagiarism || students.filter(s => s.submission_id).length < 2}
-            >
-              {comparingPlagiarism ? 'Checking...' : 'Check All Plagiarism'}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {students.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No students enrolled in this course.</p>
-            ) : (
-              students.map((student) => {
+      {students.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No students enrolled"
+          description="No students are enrolled in this course yet."
+        />
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-5">
+          <div className="min-w-0 space-y-3 lg:col-span-2">
+            <p className="eyebrow">All enrolled students · {students.length}</p>
+            <List>
+              {students.map((student) => {
                 const key = student.submission_id || student.student_id;
                 const hasSubmitted = !!student.submission_id;
+                const isGraded = !!student.grade || student.marks_obtained != null;
                 return (
-                  <div
-                    key={key}
-                    className={`rounded-lg border p-4 ${hasSubmitted ? 'border-white/10' : 'border-yellow-500/30 bg-yellow-500/5'}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedStudents.student1 === key || selectedStudents.student2 === key}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                if (!selectedStudents.student1) {
-                                  setSelectedStudents({ ...selectedStudents, student1: key });
-                                } else if (!selectedStudents.student2) {
-                                  setSelectedStudents({ ...selectedStudents, student2: key });
-                                } else {
-                                  alert('Please deselect a student first');
-                                  e.target.checked = false;
-                                }
-                              } else {
-                                if (selectedStudents.student1 === key) {
-                                  setSelectedStudents({ ...selectedStudents, student1: undefined });
-                                } else if (selectedStudents.student2 === key) {
-                                  setSelectedStudents({ ...selectedStudents, student2: undefined });
-                                }
-                              }
-                            }}
-                            disabled={!hasSubmitted}
-                            className="w-4 h-4"
-                          />
-                          <p className="font-medium text-white">{student.student_name}</p>
-                          {!hasSubmitted && (
-                            <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded">
-                              Not Submitted
-                            </span>
-                          )}
-                          {hasSubmitted && student.plagiarism_score !== undefined && (
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              student.plagiarism_score > 50 
-                                ? 'bg-red-500/20 text-red-300' 
-                                : student.plagiarism_score > 20 
-                                ? 'bg-yellow-500/20 text-yellow-300' 
-                                : 'bg-green-500/20 text-green-300'
-                            }`}>
-                              Plagiarism: {student.plagiarism_score}%
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{student.student_email}</p>
-                        {student.major && (
-                          <p className="text-xs text-muted-foreground">Major: {student.major}</p>
-                        )}
-                        {hasSubmitted && student.submitted_at && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Submitted: {new Date(student.submitted_at).toLocaleString()}
-                          </p>
-                        )}
-                        {hasSubmitted && student.file_urls && student.file_urls.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {student.file_urls.map((url, idx) => {
-                              const absoluteUrl = buildAssetUrl(url);
-                              return (
-                                <a
-                                  key={idx}
-                                  href={absoluteUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-purple-400 hover:text-purple-300 block underline"
-                                >
-                                  📄 View File {idx + 1} →
-                                </a>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {hasSubmitted && student.submission_text && (
-                          <p className="text-sm text-white mt-2 bg-white/5 p-2 rounded">
-                            {student.submission_text}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label>Marks Obtained</Label>
-                          <Input
-                            type="number"
-                            value={gradeForm[key]?.marksObtained || ''}
-                            onChange={(e) =>
-                              setGradeForm({
-                                ...gradeForm,
-                                [key]: {
-                                  ...gradeForm[key],
-                                  marksObtained: e.target.value,
-                                },
-                              })
-                            }
-                            className="w-full"
-                            placeholder="0"
-                            min="0"
-                            max={assignment?.total_marks || 100}
-                            step="0.01"
-                            disabled={!hasSubmitted}
-                          />
-                          {assignment?.total_marks && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              / {assignment.total_marks}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <Label>Grade (A-F)</Label>
-                          <Input
-                            type="text"
-                            value={gradeForm[key]?.grade || ''}
-                            onChange={(e) =>
-                              setGradeForm({
-                                ...gradeForm,
-                                [key]: {
-                                  ...gradeForm[key],
-                                  grade: e.target.value.toUpperCase(),
-                                },
-                              })
-                            }
-                            className="w-full"
-                            maxLength={2}
-                            placeholder="A-F"
-                            disabled={!hasSubmitted}
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button
-                            size="sm"
-                            onClick={() => handleGrade(student.student_id, student.submission_id)}
-                            disabled={!hasSubmitted}
-                            className="w-full"
-                          >
-                            {hasSubmitted ? 'Save Grade' : 'Not Submitted'}
-                          </Button>
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Feedback</Label>
-                        <Textarea
-                          value={gradeForm[key]?.feedback || ''}
-                          onChange={(e) =>
-                            setGradeForm({
-                              ...gradeForm,
-                              [key]: {
-                                ...gradeForm[key],
-                                feedback: e.target.value,
-                              },
-                            })
+                  <ListItem key={key} active={key === activeFormKey} className="gap-3">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${student.student_name} for comparison`}
+                      checked={selectedStudents.student1 === key || selectedStudents.student2 === key}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          if (!selectedStudents.student1) {
+                            setSelectedStudents({ ...selectedStudents, student1: key });
+                          } else if (!selectedStudents.student2) {
+                            setSelectedStudents({ ...selectedStudents, student2: key });
+                          } else {
+                            alert('Please deselect a student first');
+                            e.target.checked = false;
                           }
-                          placeholder="Provide feedback..."
-                          rows={3}
-                          disabled={!hasSubmitted}
-                        />
+                        } else {
+                          if (selectedStudents.student1 === key) {
+                            setSelectedStudents({ ...selectedStudents, student1: undefined });
+                          } else if (selectedStudents.student2 === key) {
+                            setSelectedStudents({ ...selectedStudents, student2: undefined });
+                          }
+                        }
+                      }}
+                      disabled={!hasSubmitted}
+                      className="h-4 w-4 shrink-0 accent-primary disabled:opacity-40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setActiveKey(key)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      <Avatar name={student.student_name} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-medium text-foreground">{student.student_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{student.student_email}</p>
                       </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <Badge tone={hasSubmitted ? (isGraded ? 'success' : 'primary') : 'warning'}>
+                          {hasSubmitted ? (isGraded ? 'Graded' : 'Submitted') : 'Not submitted'}
+                        </Badge>
+                        {hasSubmitted && student.plagiarism_score !== undefined && (
+                          <Badge tone={plagiarismTone(student.plagiarism_score)} className="tabular-nums">
+                            {student.plagiarism_score}% similar
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </div>
+
+          {activeStudent && (
+            <div className="min-w-0 lg:col-span-3">
+              <Card className="lg:sticky lg:top-24">
+                <CardContent className="space-y-6 p-6">
+                  <div className="flex items-start gap-3">
+                    <Avatar name={activeStudent.student_name} className="h-11 w-11 text-sm" />
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-[17px] font-semibold text-foreground">{activeStudent.student_name}</h2>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {activeStudent.student_email}
+                        {activeStudent.major && ` · ${activeStudent.major}`}
+                      </p>
+                      {activeHasSubmitted && activeStudent.submitted_at && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Submitted {new Date(activeStudent.submitted_at).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Plagiarism Comparison Section */}
+                  {!activeHasSubmitted && (
+                    <Alert tone="warning">This student has not submitted yet. Grading is available after submission.</Alert>
+                  )}
+
+                  {activeHasSubmitted && (activeStudent.submission_text || (activeStudent.file_urls && activeStudent.file_urls.length > 0)) && (
+                    <div className="space-y-3 rounded-xl bg-secondary/60 p-4">
+                      {activeStudent.submission_text && (
+                        <p className="whitespace-pre-wrap text-sm text-foreground">{activeStudent.submission_text}</p>
+                      )}
+                      {activeStudent.file_urls && activeStudent.file_urls.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {activeStudent.file_urls.map((url, idx) => {
+                            const absoluteUrl = buildAssetUrl(url);
+                            return (
+                              <a
+                                key={idx}
+                                href={absoluteUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-primary hover:bg-secondary"
+                              >
+                                <FileText className="h-4 w-4" strokeWidth={1.75} />
+                                View file {idx + 1}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field
+                      label="Marks obtained"
+                      hint={assignment?.total_marks ? `Out of ${assignment.total_marks}` : undefined}
+                    >
+                      <Input
+                        type="number"
+                        value={gradeForm[activeFormKey]?.marksObtained || ''}
+                        onChange={(e) =>
+                          setGradeForm({
+                            ...gradeForm,
+                            [activeFormKey]: {
+                              ...gradeForm[activeFormKey],
+                              marksObtained: e.target.value,
+                            },
+                          })
+                        }
+                        className="tabular-nums"
+                        placeholder="0"
+                        min="0"
+                        max={assignment?.total_marks || 100}
+                        step="0.01"
+                        disabled={!activeHasSubmitted}
+                      />
+                    </Field>
+                    <Field label="Grade" hint="A–F">
+                      <Input
+                        type="text"
+                        value={gradeForm[activeFormKey]?.grade || ''}
+                        onChange={(e) =>
+                          setGradeForm({
+                            ...gradeForm,
+                            [activeFormKey]: {
+                              ...gradeForm[activeFormKey],
+                              grade: e.target.value.toUpperCase(),
+                            },
+                          })
+                        }
+                        maxLength={2}
+                        placeholder="A-F"
+                        disabled={!activeHasSubmitted}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Feedback">
+                    <Textarea
+                      value={gradeForm[activeFormKey]?.feedback || ''}
+                      onChange={(e) =>
+                        setGradeForm({
+                          ...gradeForm,
+                          [activeFormKey]: {
+                            ...gradeForm[activeFormKey],
+                            feedback: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Provide feedback..."
+                      rows={4}
+                      disabled={!activeHasSubmitted}
+                    />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => handleGrade(activeStudent.student_id, activeStudent.submission_id)}
+                      disabled={!activeHasSubmitted}
+                    >
+                      {activeHasSubmitted ? 'Save grade' : 'Not submitted'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      )}
+
       {(selectedStudents.student1 && selectedStudents.student2) && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Compare Selected Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
-              <p className="text-white">
-                Compare: {students.find(s => (s.submission_id || s.student_id) === selectedStudents.student1)?.student_name} 
-                vs {students.find(s => (s.submission_id || s.student_id) === selectedStudents.student2)?.student_name}
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-[17px] font-semibold text-foreground">Compare selected students</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {students.find(s => (s.submission_id || s.student_id) === selectedStudents.student1)?.student_name}
+                {' vs '}
+                {students.find(s => (s.submission_id || s.student_id) === selectedStudents.student2)?.student_name}
               </p>
-              <Button
-                onClick={handleCompareTwoStudents}
-                disabled={comparingPlagiarism}
-              >
-                {comparingPlagiarism ? 'Comparing...' : 'Compare'}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button variant="ghost" onClick={() => setSelectedStudents({})}>
+                Clear selection
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedStudents({})}
-              >
-                Clear Selection
+              <Button onClick={handleCompareTwoStudents} disabled={comparingPlagiarism}>
+                {comparingPlagiarism ? 'Comparing…' : 'Compare'}
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Plagiarism Results */}
       {plagiarismResults.length > 0 && (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">Plagiarism Detection Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {plagiarismResults.map((result, idx) => (
-                <div
-                  key={idx}
-                  className={`rounded-lg border p-4 ${
-                    result.similarity > 50
-                      ? 'border-red-500/30 bg-red-500/5'
-                      : result.similarity > 20
-                      ? 'border-yellow-500/30 bg-yellow-500/5'
-                      : 'border-white/10'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-white">
-                        {result.submission1Student} vs {result.submission2Student}
-                      </p>
-                      <p className={`text-2xl font-bold mt-2 ${
-                        result.similarity > 50
-                          ? 'text-red-400'
-                          : result.similarity > 20
-                          ? 'text-yellow-400'
-                          : 'text-green-400'
-                      }`}>
-                        {result.similarity}% Similarity
-                      </p>
-                    </div>
-                  </div>
+        <Section title="Plagiarism detection results">
+          <List>
+            {plagiarismResults.map((result, idx) => (
+              <ListItem key={idx}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-foreground">
+                    {result.submission1Student} vs {result.submission2Student}
+                  </p>
                   {result.matches && result.matches.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-sm text-muted-foreground">Matching Phrases: {result.matches[0]?.count || 0}</p>
-                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                      Matching phrases: {result.matches[0]?.count || 0}
+                    </p>
                   )}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <Badge tone={plagiarismTone(result.similarity)} className="tabular-nums">
+                  {result.similarity}% similarity
+                </Badge>
+              </ListItem>
+            ))}
+          </List>
+        </Section>
       )}
     </div>
   );

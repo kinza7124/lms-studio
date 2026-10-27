@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { GraduationCap } from 'lucide-react';
 import api from '@/lib/api';
 import type { Course } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Avatar, Badge, EmptyState, LoadingState, PageHeader, Section, Select } from '@/components/ui/page';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 type Enrollment = {
@@ -124,155 +125,180 @@ export default function AdminEnrollmentsPage() {
   };
 
   if (loading) {
-    return <div className="p-4 md:p-6 lg:p-8 text-white">Loading...</div>;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-3 md:space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-3 lg:gap-4">
-        <h1 className="text-2xl sm:text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white">Enrollment Management</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin"
+        title="Enrollments"
+        description="Review student enrollments and record grades."
+        actions={
+          <Select
             value={selectedCourse || ''}
             onChange={(e) => setSelectedCourse(Number(e.target.value) || null)}
-            className="flex-1 sm:flex-none rounded border border-white/20 bg-white/5 px-3 sm:px-4 py-2 text-white text-sm sm:text-base min-w-[200px]"
+            className="w-full sm:w-72"
+            aria-label="Filter by course"
           >
-            <option value="">All Enrollments</option>
+            <option value="">All enrollments</option>
             {courses.map((course) => (
               <option key={course.course_id} value={course.course_id}>
                 {course.code} - {course.title}
               </option>
             ))}
-          </select>
-        </div>
-      </div>
+          </Select>
+        }
+      />
 
       {selectedCourse ? (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">
-              Enrollments for Selected Course ({enrollments.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {enrollments.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No enrollments found for this course.</p>
-              ) : (
-                enrollments.map((enrollment) => (
-                  <div
-                    key={enrollment.enrollment_id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 md:gap-3 lg:gap-4 rounded-lg border border-white/10 p-4"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-white">{enrollment.student_name}</p>
-                      <p className="text-sm text-muted-foreground">{enrollment.student_email}</p>
-                      <p className="text-sm text-muted-foreground">Term: {enrollment.term}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Grade"
-                        value={gradeForm[enrollment.enrollment_id] || ''}
-                        onChange={(e) =>
-                          setGradeForm({
-                            ...gradeForm,
-                            [enrollment.enrollment_id]: e.target.value.toUpperCase(),
-                          })
-                        }
-                        className="w-20"
-                        maxLength={2}
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          handleUpdateGrade(enrollment.enrollment_id, enrollment.student_id)
-                        }
-                      >
-                        Update Grade
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="Selected course" description={`${enrollments.length} enrollments`}>
+          {enrollments.length === 0 ? (
+            <EmptyState icon={GraduationCap} title="No enrollments for this course" />
+          ) : (
+            <Card className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Term</th>
+                    <th className="text-right">Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enrollments.map((enrollment) => (
+                    <tr key={enrollment.enrollment_id}>
+                      <td>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar name={enrollment.student_name} />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{enrollment.student_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">{enrollment.student_email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap text-muted-foreground">{enrollment.term}</td>
+                      <td>
+                        <div className="flex items-center justify-end gap-2">
+                          <Input
+                            type="text"
+                            placeholder="Grade"
+                            value={gradeForm[enrollment.enrollment_id] || ''}
+                            onChange={(e) =>
+                              setGradeForm({
+                                ...gradeForm,
+                                [enrollment.enrollment_id]: e.target.value.toUpperCase(),
+                              })
+                            }
+                            className="h-9 w-20 text-center"
+                            maxLength={2}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleUpdateGrade(enrollment.enrollment_id, enrollment.student_id)
+                            }
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </Section>
       ) : (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle className="text-white">
-              All Enrollments ({allEnrollments.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {allEnrollments.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No enrollments found.</p>
-              ) : (
-                allEnrollments.map((enrollment) => (
-                  <div
-                    key={enrollment.enrollment_id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 md:gap-3 lg:gap-4 rounded-lg border border-white/10 p-4"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-white">{enrollment.student_name}</p>
-                      <p className="text-sm text-muted-foreground">{enrollment.student_email}</p>
-                      <p className="text-sm text-white mt-1">
-                        <span className="font-semibold">{enrollment.code}</span> - {enrollment.course_title || enrollment.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Term: {enrollment.term}</p>
-                      {enrollment.grade && (
-                        <p className="text-sm text-muted-foreground">Grade: <span className="text-white font-semibold">{enrollment.grade}</span></p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Grade"
-                        value={gradeForm[enrollment.enrollment_id] || ''}
-                        onChange={(e) =>
-                          setGradeForm({
-                            ...gradeForm,
-                            [enrollment.enrollment_id]: e.target.value.toUpperCase(),
-                          })
-                        }
-                        className="w-20"
-                        maxLength={2}
-                      />
-                      <Button
-                        size="sm"
-                        onClick={async () => {
-                          const grade = gradeForm[enrollment.enrollment_id];
-                          if (!grade) {
-                            alert('Please enter a grade');
-                            return;
-                          }
-                          try {
-                            await api.put(`/courses/${enrollment.course_id}/grade`, {
-                              studentId: enrollment.student_id,
-                              term: enrollment.term,
-                              grade,
-                            });
-                            alert('Grade updated successfully');
-                            loadAllEnrollments();
-                          } catch (error) {
-                            console.error(error);
-                            alert('Failed to update grade');
-                          }
-                        }}
-                      >
-                        Update Grade
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Section title="All enrollments" description={`${allEnrollments.length} enrollments`}>
+          {allEnrollments.length === 0 ? (
+            <EmptyState icon={GraduationCap} title="No enrollments found" />
+          ) : (
+            <Card className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Term</th>
+                    <th>Grade</th>
+                    <th className="text-right">Update</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allEnrollments.map((enrollment) => (
+                    <tr key={enrollment.enrollment_id}>
+                      <td>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar name={enrollment.student_name} />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{enrollment.student_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">{enrollment.student_email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="min-w-[10rem]">
+                        <p className="text-xs text-muted-foreground">{enrollment.code}</p>
+                        <p className="text-foreground">{enrollment.course_title || enrollment.title}</p>
+                      </td>
+                      <td className="whitespace-nowrap text-muted-foreground">{enrollment.term}</td>
+                      <td>
+                        {enrollment.grade ? (
+                          <Badge>{enrollment.grade}</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="flex items-center justify-end gap-2">
+                          <Input
+                            type="text"
+                            placeholder="Grade"
+                            value={gradeForm[enrollment.enrollment_id] || ''}
+                            onChange={(e) =>
+                              setGradeForm({
+                                ...gradeForm,
+                                [enrollment.enrollment_id]: e.target.value.toUpperCase(),
+                              })
+                            }
+                            className="h-9 w-20 text-center"
+                            maxLength={2}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              const grade = gradeForm[enrollment.enrollment_id];
+                              if (!grade) {
+                                alert('Please enter a grade');
+                                return;
+                              }
+                              try {
+                                await api.put(`/courses/${enrollment.course_id}/grade`, {
+                                  studentId: enrollment.student_id,
+                                  term: enrollment.term,
+                                  grade,
+                                });
+                                alert('Grade updated successfully');
+                                loadAllEnrollments();
+                              } catch (error) {
+                                console.error(error);
+                                alert('Failed to update grade');
+                              }
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </Section>
       )}
     </div>
   );
 }
-

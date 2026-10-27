@@ -8,13 +8,8 @@ import type { Course, Enrollment } from '@/types';
 import { CourseCard } from '@/components/CourseCard';
 import { TeacherProfile } from '@/components/TeacherProfile';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Alert, EmptyState, LoadingState, PageHeader, Section, StatGrid } from '@/components/ui/page';
+import { ArrowRight, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function DashboardPage() {
@@ -68,104 +63,140 @@ export default function DashboardPage() {
     loadData();
   }, [router]);
 
-  return (
-    <section className="space-y-10">
-      <div className="glass-panel flex flex-wrap items-center justify-between gap-6 border-white/15">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-purple-200/80">
-            {user?.role === 'teacher' ? 'Teacher Dashboard' : user?.role === 'admin' ? 'Admin Dashboard' : 'Student Dashboard'}
-          </p>
-          <h1 className="mt-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white">
-            Welcome, {user?.full_name || 'User'}
-          </h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            {user?.role === 'teacher'
-              ? 'Manage your courses, assignments, and profile.'
-              : user?.role === 'admin'
-              ? 'Manage the entire LMS system.'
-              : 'Access your courses and track your progress.'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {/* Course creation is only available to admins */}
-        </div>
-      </div>
+  const firstName = user?.full_name ? user.full_name.split(' ')[0] : '';
+  const enrolledIds = new Set(enrollments.map((e) => e.course_id));
+  const myCourses: Course[] = enrollments.map(
+    (e) => courses.find((c) => c.course_id === e.course_id) || e,
+  );
+  const goToCourse = (id: number) => router.push(`/course/${id}`);
 
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
-          {error}
-        </div>
-      )}
+  if (loading && !user) {
+    return <LoadingState />;
+  }
+
+  return (
+    <div className="space-y-10">
+      <PageHeader
+        eyebrow={user?.role === 'teacher' ? 'Teacher' : user?.role === 'admin' ? 'Admin' : 'Student'}
+        title={`Welcome back${firstName ? `, ${firstName}` : ''}`}
+        description={
+          user?.role === 'teacher'
+            ? 'Manage your courses, assignments, and profile.'
+            : user?.role === 'admin'
+            ? 'Manage the entire LMS system.'
+            : 'Pick up where you left off.'
+        }
+        actions={
+          user?.role === 'student' ? (
+            <>
+              <Button variant="outline" onClick={() => router.push('/student/progress')}>
+                <TrendingUp className="h-4 w-4" />
+                View progress
+              </Button>
+              <Button onClick={() => router.push('/courses')}>Browse courses</Button>
+            </>
+          ) : undefined
+        }
+        className="mb-0 md:mb-0"
+      />
+
+      {error && <Alert tone="error">{error}</Alert>}
 
       {user?.role === 'teacher' && (
-        <div className="space-y-3 md:space-y-4 lg:space-y-6">
-          <TeacherProfile />
+        <>
+          <StatGrid
+            items={[
+              { label: 'Assigned courses', value: teacherCourses.length },
+              { label: 'Courses in catalog', value: courses.length },
+            ]}
+          />
 
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-white">My Assigned Courses</h2>
+          <Section title="My assigned courses" description="Courses you are teaching this term.">
             {teacherCourses.length === 0 ? (
-              <p className="text-muted-foreground">No courses assigned yet.</p>
+              <EmptyState
+                icon={BookOpen}
+                title="No courses assigned yet"
+                description="Courses assigned to you by an administrator will appear here."
+              />
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {teacherCourses.map((course) => (
-                  <CourseCard
-                    key={course.course_id}
-                    course={course}
-                    onView={(id) => router.push(`/course/${id}`)}
-                  />
+                  <CourseCard key={course.course_id} course={course} onView={goToCourse} ctaLabel="Manage course" />
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </Section>
+
+          <Section title="Profile" description="Your department and bio, visible to students.">
+            <TeacherProfile />
+          </Section>
+        </>
       )}
 
-          {user?.role === 'student' && (
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="border-white/10 bg-white/5">
-                <CardHeader>
-                  <CardDescription>Enrolled Courses</CardDescription>
-                  <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white">{enrollments.length}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card 
-                className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                onClick={() => router.push('/student/progress')}
-              >
-                <CardHeader>
-                  <CardDescription>View Progress</CardDescription>
-                  <CardTitle className="text-lg text-white">Track Your Learning →</CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
-          )}
+      {user?.role === 'student' && (
+        <>
+          <StatGrid
+            items={[
+              { label: 'Enrolled courses', value: enrollments.length },
+              { label: 'Available courses', value: courses.length },
+              {
+                label: 'Not yet enrolled',
+                value: courses.filter((c) => !enrolledIds.has(c.course_id)).length,
+              },
+            ]}
+          />
+
+          <Section
+            title="Continue learning"
+            actions={
+              enrollments.length > 0 ? (
+                <Button variant="ghost" size="sm" onClick={() => router.push('/student/my-courses')}>
+                  See all
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : undefined
+            }
+          >
+            {myCourses.length === 0 ? (
+              <EmptyState
+                icon={GraduationCap}
+                title="You are not enrolled in any courses yet"
+                description="Browse the catalog to find something that interests you."
+                action={<Button onClick={() => router.push('/courses')}>Browse courses</Button>}
+              />
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {myCourses.map((course) => (
+                  <CourseCard key={course.course_id} course={course} onView={goToCourse} ctaLabel="Continue" />
+                ))}
+              </div>
+            )}
+          </Section>
+        </>
+      )}
 
       {user?.role !== 'admin' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-semibold text-white">All Courses</h2>
-            <span className="text-sm text-muted-foreground">
+        <Section
+          title="All courses"
+          actions={
+            <span className="text-sm tabular-nums text-muted-foreground">
               {courses.length} course{courses.length === 1 ? '' : 's'}
             </span>
-          </div>
+          }
+        >
           {loading ? (
-            <p className="text-muted-foreground">Loading courses…</p>
+            <LoadingState label="Loading courses…" />
           ) : courses.length === 0 ? (
-            <p className="text-muted-foreground">No courses yet.</p>
+            <EmptyState icon={BookOpen} title="No courses yet" description="New courses will show up here." />
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
-                <CourseCard
-                  key={course.course_id}
-                  course={course}
-                  onView={(id) => router.push(`/course/${id}`)}
-                />
+                <CourseCard key={course.course_id} course={course} onView={goToCourse} />
               ))}
             </div>
           )}
-        </div>
+        </Section>
       )}
-    </section>
+    </div>
   );
 }
-

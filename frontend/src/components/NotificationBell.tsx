@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, GraduationCap, Megaphone, Clock, FileText, ClipboardList, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '@/lib/api';
@@ -126,19 +126,19 @@ export function NotificationBell() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'grade':
-        return '🎓';
+        return GraduationCap;
       case 'announcement':
-        return '📢';
+        return Megaphone;
       case 'deadline':
-        return '⏰';
+        return Clock;
       case 'assignment':
-        return '📝';
+        return FileText;
       case 'quiz':
-        return '📋';
+        return ClipboardList;
       case 'assessment':
-        return '📊';
+        return BarChart3;
       default:
-        return '🔔';
+        return Bell;
     }
   };
 
@@ -163,28 +163,28 @@ export function NotificationBell() {
         variant="ghost"
         size="icon"
         onClick={handleToggle}
-        className="relative"
+        className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs font-bold text-white flex items-center justify-center">
+          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 z-50 w-96 max-h-[600px] overflow-hidden">
-          <Card className="border-white/10 bg-background/95 backdrop-blur-lg shadow-xl">
+        <div className="absolute right-0 top-11 z-50 w-[22rem] max-w-[calc(100vw-2rem)] max-h-[600px] overflow-hidden">
+          <Card className="overflow-hidden bg-white/95 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-xl">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg">Notifications</CardTitle>
+              <CardTitle className="text-[15px]">Notifications</CardTitle>
               <div className="flex gap-2">
                 {unreadCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleMarkAllAsRead}
-                    className="text-xs"
+                    className="h-7 px-2.5 text-xs text-primary hover:bg-primary/5"
                   >
                     Mark all read
                   </Button>
@@ -200,24 +200,31 @@ export function NotificationBell() {
                     No notifications yet
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/5">
+                  <div className="divide-y divide-border/70">
                     {notifications.map((notification) => (
                       <div
                         key={notification.notification_id}
                         onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 cursor-pointer hover:bg-white/5 transition-colors ${
-                          !notification.read ? 'bg-purple-500/10' : ''
+                        className={`p-4 cursor-pointer hover:bg-secondary/60 transition-colors ${
+                          !notification.read ? 'bg-primary/[0.03]' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                          {(() => {
+                            const Icon = getNotificationIcon(notification.type);
+                            return (
+                              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                                <Icon className="h-4 w-4" strokeWidth={1.75} />
+                              </span>
+                            );
+                          })()}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="font-semibold text-sm text-white truncate">
+                              <p className="font-medium text-sm text-foreground truncate">
                                 {notification.title}
                               </p>
                               {!notification.read && (
-                                <span className="h-2 w-2 rounded-full bg-purple-400 shrink-0 ml-2" />
+                                <span className="h-2 w-2 rounded-full bg-primary shrink-0 ml-2" />
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
