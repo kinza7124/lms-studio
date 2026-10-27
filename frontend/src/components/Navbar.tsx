@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import { Logo } from './Logo';
 import { NotificationBell } from './NotificationBell';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -166,7 +167,7 @@ export function Navbar() {
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-30 w-full border-b border-black/[0.06] bg-white/75 backdrop-blur-xl dark:bg-[rgb(22_22_23/0.72)] backdrop-saturate-150">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between gap-6">
           <Link href={user ? (user.role === 'admin' ? '/admin' : '/dashboard') : '/'} className="flex shrink-0 items-center" onClick={() => setMobileMenuOpen(false)}>
@@ -194,6 +195,7 @@ export function Navbar() {
           )}
 
           <div className="flex shrink-0 items-center gap-1.5">
+            <ThemeToggle compact />
             {!loading ? (
               user && (user.role === 'admin' || user.role === 'teacher' || user.role === 'student') ? (
                 <>

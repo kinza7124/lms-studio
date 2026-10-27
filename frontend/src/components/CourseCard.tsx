@@ -10,11 +10,11 @@ type CourseCardProps = {
 
 // Soft, deterministic tints for courses without a thumbnail
 const TINTS = [
-  { bg: 'bg-[#eaf3ff]', fg: 'text-[#0060d1]' },
-  { bg: 'bg-[#eaf7ee]', fg: 'text-[#1e7a3c]' },
-  { bg: 'bg-[#fff3e6]', fg: 'text-[#b25b00]' },
-  { bg: 'bg-[#f2effc]', fg: 'text-[#5b47b8]' },
-  { bg: 'bg-[#eef1f4]', fg: 'text-[#3c4a5a]' },
+  { bg: 'bg-[#eaf3ff] dark:bg-[#0a84ff]/[0.14]', fg: 'text-[#0060d1] dark:text-[#64aaff]' },
+  { bg: 'bg-[#eaf7ee] dark:bg-[#30d158]/[0.12]', fg: 'text-[#1e7a3c] dark:text-[#5fe07f]' },
+  { bg: 'bg-[#fff3e6] dark:bg-[#ff9f0a]/[0.12]', fg: 'text-[#b25b00] dark:text-[#ffb340]' },
+  { bg: 'bg-[#f2effc] dark:bg-[#bf5af2]/[0.14]', fg: 'text-[#5b47b8] dark:text-[#d08cf7]' },
+  { bg: 'bg-[#eef1f4] dark:bg-white/[0.05]', fg: 'text-[#3c4a5a] dark:text-[#c7ccd1]' },
 ];
 
 export function CourseCard({ course, onView, ctaLabel = 'View course' }: CourseCardProps) {
@@ -24,9 +24,9 @@ export function CourseCard({ course, onView, ctaLabel = 'View course' }: CourseC
     <button
       type="button"
       onClick={() => onView?.(course.course_id)}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] dark:hover:border-white/20 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
     >
-      <div className="relative aspect-[2/1] w-full overflow-hidden bg-secondary">
+      <div className="relative aspect-[2/1] w-full overflow-hidden bg-secondary dark:bg-transparent">
         {course.thumbnail_url ? (
           <img
             src={course.thumbnail_url}
